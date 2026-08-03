@@ -62,6 +62,10 @@ describe('월간 달력', () => {
 
     fireEvent.click(eighth)
     fireEvent.click(tenth)
+    expect(screen.getByLabelText('사용할 보유 휴가')).toHaveClass(
+      'h-14',
+      'appearance-none',
+    )
     fireEvent.change(screen.getByLabelText('사용할 보유 휴가'), {
       target: { value: leaveGrant.id },
     })
@@ -85,6 +89,24 @@ describe('월간 달력', () => {
 
     const startInput = screen.getByLabelText('시작일')
     let endInput = screen.getByLabelText('종료일')
+    expect(startInput).toHaveClass(
+      'h-14',
+      'min-w-0',
+      'max-w-full',
+      'calendar-date-input',
+      'calendar-date-input-centered',
+    )
+    expect(endInput).toHaveClass(
+      'h-14',
+      'min-w-0',
+      'max-w-full',
+      'calendar-date-input',
+      'calendar-date-input-centered',
+    )
+    expect(screen.getByLabelText('사용할 보유 휴가')).toHaveClass(
+      'h-14',
+      'appearance-none',
+    )
     const yearMonth = (startInput as HTMLInputElement).value.slice(0, 8)
 
     fireEvent.change(endInput, { target: { value: `${yearMonth}11` } })
