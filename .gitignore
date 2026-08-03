@@ -1,2 +1,15 @@
 # Local planning context (not published to GitHub)
 PROJECT_CONTEXT.local.md
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Tool output
+coverage/
+*.log
