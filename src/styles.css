@@ -31,3 +31,26 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+.calendar-date-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.calendar-date-input::-webkit-date-and-time-value {
+  min-height: 1.5rem;
+  text-align: left;
+}
+
+.calendar-date-input-centered::-webkit-date-and-time-value,
+.calendar-date-input-centered::-webkit-datetime-edit {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+  padding-block: 0;
+}

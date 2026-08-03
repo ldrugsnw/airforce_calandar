@@ -12,6 +12,17 @@ describe('보유 휴가 등록 흐름', () => {
     )
 
     fireEvent.click(screen.getByRole('link', { name: '휴가 추가' }))
+    expect(screen.getByLabelText(/휴가 종류/)).toHaveClass(
+      'h-14',
+      'appearance-none',
+    )
+    expect(screen.getByLabelText(/획득 날짜/)).toHaveClass(
+      'h-14',
+      'min-w-0',
+      'max-w-full',
+      'calendar-date-input',
+      'calendar-date-input-centered',
+    )
     fireEvent.change(screen.getByLabelText(/휴가 종류/), {
       target: { value: 'consolation' },
     })

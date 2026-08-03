@@ -2,15 +2,16 @@ import { Link } from 'react-router'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
 import { getLeaveTypeLabel } from '../domain/leave'
+import { getAvailableDays } from '../domain/leaveUsage'
 import { useAppState } from '../store/appStateContext'
 
 export function LeavePage() {
-  const { leaveGrants } = useAppState()
+  const { leaveGrants, leaveUsages } = useAppState()
   const sortedLeaveGrants = [...leaveGrants].sort((first, second) =>
     second.acquiredDate.localeCompare(first.acquiredDate),
   )
-  const totalDays = leaveGrants.reduce(
-    (sum, leaveGrant) => sum + leaveGrant.days,
+  const totalAvailableDays = leaveGrants.reduce(
+    (sum, leaveGrant) => sum + getAvailableDays(leaveGrant, leaveUsages),
     0,
   )
 
@@ -22,13 +23,13 @@ export function LeavePage() {
       />
 
       <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-sm">
-        <p className="text-sm font-medium text-slate-300">총 보유 휴가</p>
+        <p className="text-sm font-medium text-slate-300">총 사용 가능 휴가</p>
         <p className="mt-2 text-4xl font-bold tracking-tight">
-          {totalDays}
+          {totalAvailableDays}
           <span className="ml-1 text-lg font-semibold text-slate-300">일</span>
         </p>
         <p className="mt-3 text-xs leading-5 text-slate-400">
-          사용 일정이 없는 현재는 획득 일수 전체를 보여줍니다.
+          등록한 사용 일정을 제외하고 새로 계획할 수 있는 일수입니다.
         </p>
       </section>
 
@@ -67,6 +68,9 @@ export function LeavePage() {
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     {leaveGrant.acquiredDate} 획득
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-brand-700">
+                    사용 가능 {getAvailableDays(leaveGrant, leaveUsages)}일
                   </p>
                 </div>
                 <p

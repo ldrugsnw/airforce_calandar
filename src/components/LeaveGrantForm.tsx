@@ -74,21 +74,24 @@ export function LeaveGrantForm({
   return (
     <form className="mt-8 space-y-6" noValidate onSubmit={handleSubmit}>
       <Field label="휴가 종류" required error={errors.type}>
-        <select
-          aria-invalid={Boolean(errors.type)}
-          className={inputClassName(Boolean(errors.type))}
-          defaultValue={values.type}
-          name="type"
-        >
-          <option disabled value="">
-            휴가 종류 선택
-          </option>
-          {LEAVE_TYPES.map((leaveType) => (
-            <option key={leaveType.value} value={leaveType.value}>
-              {leaveType.label}
+        <div className="relative min-w-0 w-full">
+          <select
+            aria-invalid={Boolean(errors.type)}
+            className={`${inputClassName(Boolean(errors.type))} appearance-none pr-12`}
+            defaultValue={values.type}
+            name="type"
+          >
+            <option disabled value="">
+              휴가 종류 선택
             </option>
-          ))}
-        </select>
+            {LEAVE_TYPES.map((leaveType) => (
+              <option key={leaveType.value} value={leaveType.value}>
+                {leaveType.label}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </div>
       </Field>
 
       <Field label="획득 일수" required error={errors.days}>
@@ -113,7 +116,7 @@ export function LeaveGrantForm({
       <Field label="획득 날짜" required error={errors.acquiredDate}>
         <input
           aria-invalid={Boolean(errors.acquiredDate)}
-          className={inputClassName(Boolean(errors.acquiredDate))}
+          className={`${inputClassName(Boolean(errors.acquiredDate))} calendar-date-input calendar-date-input-centered`}
           defaultValue={values.acquiredDate}
           name="acquiredDate"
           type="date"
@@ -158,6 +161,25 @@ export function LeaveGrantForm({
   )
 }
 
+function SelectChevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-slate-500"
+      fill="none"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="m6 8 4 4 4-4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.75"
+      />
+    </svg>
+  )
+}
+
 type FieldProps = {
   children: ReactNode
   error?: string
@@ -185,7 +207,7 @@ function Field({ children, error, hint, label, required }: FieldProps) {
 }
 
 function inputClassName(hasError: boolean) {
-  return `min-h-12 w-full rounded-xl border bg-white px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-3 ${
+  return `h-14 min-w-0 w-full max-w-full rounded-xl border bg-white px-4 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-3 ${
     hasError
       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
       : 'border-slate-300 focus:border-brand-500 focus:ring-brand-100'
