@@ -51,11 +51,13 @@ export function LeavePage() {
       ) : (
         <ul className="mt-4 space-y-3">
           {sortedLeaveGrants.map((leaveGrant) => (
-            <li
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-              key={leaveGrant.id}
-            >
-              <div className="flex items-start justify-between gap-4">
+            <li key={leaveGrant.id}>
+              <Link
+                aria-label={`${getLeaveTypeLabel(leaveGrant.type)} ${leaveGrant.days}일 상세 보기`}
+                className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md"
+                to={`/leave/${leaveGrant.id}`}
+              >
+                <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <span className="inline-flex rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
                     {getLeaveTypeLabel(leaveGrant.type)}
@@ -74,12 +76,13 @@ export function LeavePage() {
                   {leaveGrant.days}
                   <span className="ml-1 text-sm font-semibold text-slate-500">일</span>
                 </p>
-              </div>
-              {leaveGrant.memo && (
-                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
-                  {leaveGrant.memo}
-                </p>
-              )}
+                </div>
+                {leaveGrant.memo && (
+                  <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
+                    {leaveGrant.memo}
+                  </p>
+                )}
+              </Link>
             </li>
           ))}
         </ul>

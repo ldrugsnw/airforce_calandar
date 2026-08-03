@@ -3,6 +3,8 @@ import { AppLayout } from './AppLayout'
 import { CalendarPage } from '../pages/CalendarPage'
 import { HomePage } from '../pages/HomePage'
 import { LeaveCreatePage } from '../pages/LeaveCreatePage'
+import { LeaveDetailPage } from '../pages/LeaveDetailPage'
+import { LeaveEditPage } from '../pages/LeaveEditPage'
 import { LeavePage } from '../pages/LeavePage'
 import { AppStateProvider } from '../store/AppStateProvider'
 
@@ -15,6 +17,8 @@ export function App() {
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="leave" element={<LeavePage />} />
           <Route path="leave/new" element={<LeaveCreatePage />} />
+          <Route path="leave/:leaveGrantId" element={<LeaveDetailPage />} />
+          <Route path="leave/:leaveGrantId/edit" element={<LeaveEditPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

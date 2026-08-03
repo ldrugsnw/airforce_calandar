@@ -1,0 +1,56 @@
+import { Navigate, useNavigate, useParams } from 'react-router'
+import {
+  LeaveGrantForm,
+  type LeaveGrantFormValues,
+} from '../components/LeaveGrantForm'
+import { SubPageHeader } from '../components/SubPageHeader'
+import { useAppDispatch, useAppState } from '../store/appStateContext'
+
+export function LeaveEditPage() {
+  const { leaveGrantId } = useParams()
+  const { leaveGrants } = useAppState()
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const leaveGrant = leaveGrants.find((item) => item.id === leaveGrantId)
+
+  if (!leaveGrant) {
+    return <Navigate to="/leave" replace />
+  }
+
+  const currentLeaveGrant = leaveGrant
+
+  function handleSubmit(values: LeaveGrantFormValues) {
+    dispatch({
+      type: 'leaveGrant/updated',
+      payload: {
+        ...currentLeaveGrant,
+        ...values,
+        updatedAt: new Date().toISOString(),
+      },
+    })
+    navigate(`/leave/${currentLeaveGrant.id}`, { replace: true })
+  }
+
+  return (
+    <div>
+      <SubPageHeader
+        backTo={`/leave/${currentLeaveGrant.id}`}
+        description="저장하면 보유 휴가 정보가 즉시 갱신됩니다."
+        eyebrow="내 휴가"
+        title="보유 휴가 수정"
+      />
+      <LeaveGrantForm
+        initialValues={{
+          type: currentLeaveGrant.type,
+          days: currentLeaveGrant.days,
+          acquiredDate: currentLeaveGrant.acquiredDate,
+          reason: currentLeaveGrant.reason,
+          memo: currentLeaveGrant.memo,
+        }}
+        onCancel={() => navigate(`/leave/${currentLeaveGrant.id}`)}
+        onSubmit={handleSubmit}
+        submitLabel="변경사항 저장"
+      />
+    </div>
+  )
+}
