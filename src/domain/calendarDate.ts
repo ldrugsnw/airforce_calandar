@@ -1,0 +1,115 @@
+export type CalendarDate = `${number}-${number}-${number}`
+
+export type CalendarMonth = {
+  year: number
+  month: number
+}
+
+export type CalendarDay = {
+  date: CalendarDate
+  day: number
+}
+
+const CALENDAR_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+
+function toDateParts(date: CalendarDate) {
+  const match = CALENDAR_DATE_PATTERN.exec(date)
+
+  if (!match) {
+    throw new Error(`올바르지 않은 달력 날짜입니다: ${date}`)
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const utcDate = new Date(Date.UTC(year, month - 1, day))
+
+  if (
+    utcDate.getUTCFullYear() !== year ||
+    utcDate.getUTCMonth() !== month - 1 ||
+    utcDate.getUTCDate() !== day
+  ) {
+    throw new Error(`존재하지 않는 달력 날짜입니다: ${date}`)
+  }
+
+  return { day, month, year }
+}
+
+function createCalendarDate(year: number, month: number, day: number) {
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` as CalendarDate
+}
+
+function toDayNumber(date: CalendarDate) {
+  const { day, month, year } = toDateParts(date)
+  return Date.UTC(year, month - 1, day) / MILLISECONDS_PER_DAY
+}
+
+export function getKstToday(now = new Date()): CalendarDate {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+  }).formatToParts(now)
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+
+  return createCalendarDate(
+    Number(values.year),
+    Number(values.month),
+    Number(values.day),
+  )
+}
+
+export function getCalendarMonth(date: CalendarDate): CalendarMonth {
+  const { month, year } = toDateParts(date)
+  return { month, year }
+}
+
+export function moveCalendarMonth(
+  { month, year }: CalendarMonth,
+  offset: number,
+): CalendarMonth {
+  const moved = new Date(Date.UTC(year, month - 1 + offset, 1))
+  return { month: moved.getUTCMonth() + 1, year: moved.getUTCFullYear() }
+}
+
+export function createMonthGrid({ month, year }: CalendarMonth) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('올바르지 않은 연월입니다.')
+  }
+
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay()
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const cells: Array<CalendarDay | null> = Array.from({ length: 42 }, () => null)
+
+  for (let day = 1; day <= lastDay; day += 1) {
+    cells[firstWeekday + day - 1] = {
+      date: createCalendarDate(year, month, day),
+      day,
+    }
+  }
+
+  return cells
+}
+
+export function orderCalendarRange(first: CalendarDate, second: CalendarDate) {
+  return toDayNumber(first) <= toDayNumber(second)
+    ? { endDate: second, startDate: first }
+    : { endDate: first, startDate: second }
+}
+
+export function getInclusiveDayCount(startDate: CalendarDate, endDate: CalendarDate) {
+  const difference = toDayNumber(endDate) - toDayNumber(startDate)
+
+  if (difference < 0) {
+    throw new Error('종료일은 시작일보다 빠를 수 없습니다.')
+  }
+
+  return difference + 1
+}
+
+export function formatCalendarDate(date: CalendarDate) {
+  const { day, month, year } = toDateParts(date)
+  return `${year}년 ${month}월 ${day}일`
+}
