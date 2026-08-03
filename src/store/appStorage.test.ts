@@ -14,14 +14,47 @@ describe('앱 상태 브라우저 저장', () => {
   }
 
   it('저장한 보유 휴가를 다시 불러온다', () => {
-    saveAppState({ leaveGrants: [leaveGrant] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
 
-    expect(loadAppState()).toEqual({ leaveGrants: [leaveGrant] })
+    expect(loadAppState()).toEqual({ leaveGrants: [leaveGrant], leaveUsages: [] })
+  })
+
+  it('1형식의 보유 휴가를 잃지 않고 2형식 상태로 불러온다', () => {
+    localStorage.setItem(
+      APP_STORAGE_KEY,
+      JSON.stringify({ version: 1, leaveGrants: [leaveGrant] }),
+    )
+
+    expect(loadAppState()).toEqual({ leaveGrants: [leaveGrant], leaveUsages: [] })
   })
 
   it('이해할 수 없는 데이터이면 빈 상태를 사용한다', () => {
     localStorage.setItem(APP_STORAGE_KEY, '{"version":99}')
 
-    expect(loadAppState()).toEqual({ leaveGrants: [] })
+    expect(loadAppState()).toEqual({ leaveGrants: [], leaveUsages: [] })
+  })
+
+  it('존재하지 않는 보유 휴가를 참조하는 사용 기록이면 빈 상태를 사용한다', () => {
+    localStorage.setItem(
+      APP_STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        leaveGrants: [],
+        leaveUsages: [
+          {
+            id: 'leave-usage-1',
+            leaveGrantId: 'missing-grant',
+            startDate: '2026-08-08',
+            endDate: '2026-08-10',
+            canceled: false,
+            canceledAt: null,
+            createdAt: '2026-08-01T00:00:00.000Z',
+            updatedAt: '2026-08-01T00:00:00.000Z',
+          },
+        ],
+      }),
+    )
+
+    expect(loadAppState()).toEqual({ leaveGrants: [], leaveUsages: [] })
   })
 })

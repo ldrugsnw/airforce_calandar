@@ -17,7 +17,7 @@ const leaveGrant: LeaveGrant = {
 
 describe('보유 휴가 상세·수정·삭제 흐름', () => {
   it('상세에서 보유 휴가를 수정하고 저장한다', async () => {
-    saveAppState({ leaveGrants: [leaveGrant] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
         <App />
@@ -48,7 +48,7 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
   })
 
   it('확인 후 보유 휴가를 삭제한다', async () => {
-    saveAppState({ leaveGrants: [leaveGrant] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
