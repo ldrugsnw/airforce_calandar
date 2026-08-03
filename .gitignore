@@ -1,5 +1,6 @@
 # Local planning context (not published to GitHub)
 PROJECT_CONTEXT.local.md
+HANDOFF.local.md
 
 # Dependencies and build output
 node_modules/
