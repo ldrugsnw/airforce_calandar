@@ -1,17 +1,20 @@
 import { Link } from 'react-router'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
+import { getKstToday } from '../domain/calendarDate'
 import { getLeaveTypeLabel } from '../domain/leave'
-import { getAvailableDays } from '../domain/leaveUsage'
+import { getLeaveGrantSummary } from '../domain/leaveUsage'
 import { useAppState } from '../store/appStateContext'
 
 export function LeavePage() {
   const { leaveGrants, leaveUsages } = useAppState()
+  const today = getKstToday()
   const sortedLeaveGrants = [...leaveGrants].sort((first, second) =>
     second.acquiredDate.localeCompare(first.acquiredDate),
   )
   const totalAvailableDays = leaveGrants.reduce(
-    (sum, leaveGrant) => sum + getAvailableDays(leaveGrant, leaveUsages),
+    (sum, leaveGrant) =>
+      sum + getLeaveGrantSummary(leaveGrant, leaveUsages, today).availableDays,
     0,
   )
 
@@ -51,9 +54,12 @@ export function LeavePage() {
         />
       ) : (
         <ul className="mt-4 space-y-3">
-          {sortedLeaveGrants.map((leaveGrant) => (
-            <li key={leaveGrant.id}>
-              <Link
+          {sortedLeaveGrants.map((leaveGrant) => {
+            const summary = getLeaveGrantSummary(leaveGrant, leaveUsages, today)
+
+            return (
+              <li key={leaveGrant.id}>
+                <Link
                 aria-label={`${getLeaveTypeLabel(leaveGrant.type)} ${leaveGrant.days}일 상세 보기`}
                 className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md"
                 to={`/leave/${leaveGrant.id}`}
@@ -69,9 +75,6 @@ export function LeavePage() {
                   <p className="mt-1 text-xs text-slate-500">
                     {leaveGrant.acquiredDate} 획득
                   </p>
-                  <p className="mt-2 text-xs font-semibold text-brand-700">
-                    사용 가능 {getAvailableDays(leaveGrant, leaveUsages)}일
-                  </p>
                 </div>
                 <p
                   aria-label={`${leaveGrant.days}일`}
@@ -81,16 +84,40 @@ export function LeavePage() {
                   <span className="ml-1 text-sm font-semibold text-slate-500">일</span>
                 </p>
                 </div>
+                <dl className="mt-4 grid grid-cols-4 gap-2 border-t border-slate-100 pt-4 text-center">
+                  <SummaryItem label="총 획득" value={summary.totalDays} />
+                  <SummaryItem label="사용 완료" value={summary.completedDays} />
+                  <SummaryItem label="사용 예정" value={summary.scheduledDays} />
+                  <SummaryItem label="사용 가능" value={summary.availableDays} emphasized />
+                </dl>
                 {leaveGrant.memo && (
                   <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
                     {leaveGrant.memo}
                   </p>
                 )}
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
     </>
+  )
+}
+
+type SummaryItemProps = {
+  emphasized?: boolean
+  label: string
+  value: number
+}
+
+function SummaryItem({ emphasized = false, label, value }: SummaryItemProps) {
+  return (
+    <div>
+      <dt className="text-[0.6875rem] font-medium text-slate-500">{label}</dt>
+      <dd className={`mt-1 text-sm font-bold ${emphasized ? 'text-brand-700' : 'text-slate-900'}`}>
+        {value}일
+      </dd>
+    </div>
   )
 }

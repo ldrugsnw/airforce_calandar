@@ -15,12 +15,72 @@ export type LeaveUsage = {
   updatedAt: string
 }
 
+export type LeaveUsageStatus = 'scheduled' | 'inProgress' | 'completed'
+
+export type LeaveGrantSummary = {
+  totalDays: number
+  completedDays: number
+  scheduledDays: number
+  availableDays: number
+}
+
 export type LeaveUsageValidation =
   | { valid: true }
   | { valid: false; reason: 'leaveGrantNotFound' | 'insufficientDays' | 'overlap'; message: string }
 
 export function getLeaveUsageDays(leaveUsage: LeaveUsage) {
   return getInclusiveDayCount(leaveUsage.startDate, leaveUsage.endDate)
+}
+
+export function getLeaveUsageStatus(
+  leaveUsage: LeaveUsage,
+  today: CalendarDate,
+): LeaveUsageStatus {
+  if (today < leaveUsage.startDate) return 'scheduled'
+  if (today <= leaveUsage.endDate) return 'inProgress'
+  return 'completed'
+}
+
+export function getLeaveUsageStatusLabel(status: LeaveUsageStatus) {
+  const labels: Record<LeaveUsageStatus, string> = {
+    scheduled: '사용 예정',
+    inProgress: '휴가 중',
+    completed: '사용 완료',
+  }
+
+  return labels[status]
+}
+
+export function getLeaveGrantSummary(
+  leaveGrant: LeaveGrant,
+  leaveUsages: LeaveUsage[],
+  today: CalendarDate,
+): LeaveGrantSummary {
+  const activeUsages = leaveUsages.filter(
+    (usage) => usage.leaveGrantId === leaveGrant.id && !usage.canceled,
+  )
+
+  return activeUsages.reduce<LeaveGrantSummary>(
+    (summary, usage) => {
+      const usageDays = getLeaveUsageDays(usage)
+      const status = getLeaveUsageStatus(usage, today)
+
+      return {
+        ...summary,
+        completedDays:
+          summary.completedDays + (status === 'completed' ? usageDays : 0),
+        scheduledDays:
+          summary.scheduledDays + (status === 'scheduled' ? usageDays : 0),
+        availableDays: summary.availableDays - usageDays,
+      }
+    },
+    {
+      totalDays: leaveGrant.days,
+      completedDays: 0,
+      scheduledDays: 0,
+      availableDays: leaveGrant.days,
+    },
+  )
 }
 
 export function getUsedDaysForGrant(

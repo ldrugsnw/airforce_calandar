@@ -14,6 +14,8 @@ import {
 import { getLeaveTypeLabel, type LeaveType } from '../domain/leave'
 import {
   getAvailableDays,
+  getLeaveUsageStatus,
+  getLeaveUsageStatusLabel,
   validateLeaveUsage,
   type LeaveUsage,
 } from '../domain/leaveUsage'
@@ -309,6 +311,11 @@ export function CalendarPage() {
                   className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${LEAVE_TYPE_STYLES[selectedUsageGrant.type]}`}
                 >
                   {getLeaveTypeLabel(selectedUsageGrant.type)}
+                </span>
+                <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {getLeaveUsageStatusLabel(
+                    getLeaveUsageStatus(selectedLeaveUsage, today),
+                  )}
                 </span>
                 <p className="mt-3 font-semibold text-slate-950">
                   {selectedUsageGrant.reason || '사유 없음'}

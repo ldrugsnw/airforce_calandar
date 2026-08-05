@@ -1,11 +1,13 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { SubPageHeader } from '../components/SubPageHeader'
+import { getKstToday } from '../domain/calendarDate'
 import { getLeaveTypeLabel } from '../domain/leave'
+import { getLeaveGrantSummary } from '../domain/leaveUsage'
 import { useAppDispatch, useAppState } from '../store/appStateContext'
 
 export function LeaveDetailPage() {
   const { leaveGrantId } = useParams()
-  const { leaveGrants } = useAppState()
+  const { leaveGrants, leaveUsages } = useAppState()
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const leaveGrant = leaveGrants.find((item) => item.id === leaveGrantId)
@@ -15,6 +17,11 @@ export function LeaveDetailPage() {
   }
 
   const currentLeaveGrant = leaveGrant
+  const summary = getLeaveGrantSummary(
+    currentLeaveGrant,
+    leaveUsages,
+    getKstToday(),
+  )
 
   function handleDelete() {
     const confirmed = window.confirm(
@@ -61,6 +68,16 @@ export function LeaveDetailPage() {
         </dl>
       </section>
 
+      <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-base font-bold text-slate-950">휴가 일수 현황</h2>
+        <dl className="mt-4 grid grid-cols-2 gap-3">
+          <SummaryCard label="총 획득" value={summary.totalDays} />
+          <SummaryCard label="사용 완료" value={summary.completedDays} />
+          <SummaryCard label="사용 예정" value={summary.scheduledDays} />
+          <SummaryCard label="사용 가능" value={summary.availableDays} emphasized />
+        </dl>
+      </section>
+
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button
           className="min-h-12 rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
@@ -80,6 +97,23 @@ export function LeaveDetailPage() {
       <p className="mt-4 text-center text-xs leading-5 text-slate-400">
         현재는 사용 기록이 없으므로 삭제할 수 있습니다.
       </p>
+    </div>
+  )
+}
+
+type SummaryCardProps = {
+  emphasized?: boolean
+  label: string
+  value: number
+}
+
+function SummaryCard({ emphasized = false, label, value }: SummaryCardProps) {
+  return (
+    <div className={emphasized ? 'rounded-2xl bg-brand-50 p-4' : 'rounded-2xl bg-slate-50 p-4'}>
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className={`mt-1 text-xl font-bold ${emphasized ? 'text-brand-700' : 'text-slate-950'}`}>
+        {value}일
+      </dd>
     </div>
   )
 }

@@ -1,6 +1,9 @@
 import type { LeaveGrant } from './leave'
 import {
   getAvailableDays,
+  getLeaveGrantSummary,
+  getLeaveUsageStatus,
+  getLeaveUsageStatusLabel,
   validateLeaveUsage,
   type LeaveUsage,
 } from './leaveUsage'
@@ -30,6 +33,32 @@ describe('휴가 사용 기록 계산과 검증', () => {
   it('취소되지 않은 사용 기록을 보유 일수에서 뺀다', () => {
     expect(getAvailableDays(leaveGrant, [leaveUsage])).toBe(2)
     expect(getAvailableDays(leaveGrant, [{ ...leaveUsage, canceled: true }])).toBe(5)
+  })
+
+  it('KST 오늘과 기간을 비교해 예정, 휴가 중, 완료 상태를 계산한다', () => {
+    expect(getLeaveUsageStatus(leaveUsage, '2026-08-07')).toBe('scheduled')
+    expect(getLeaveUsageStatus(leaveUsage, '2026-08-08')).toBe('inProgress')
+    expect(getLeaveUsageStatus(leaveUsage, '2026-08-10')).toBe('inProgress')
+    expect(getLeaveUsageStatus(leaveUsage, '2026-08-11')).toBe('completed')
+    expect(getLeaveUsageStatusLabel('scheduled')).toBe('사용 예정')
+    expect(getLeaveUsageStatusLabel('inProgress')).toBe('휴가 중')
+    expect(getLeaveUsageStatusLabel('completed')).toBe('사용 완료')
+  })
+
+  it('나누어 쓴 기록을 상태별로 합산하고 전체 사용 일수는 한 번만 차감한다', () => {
+    const usages: LeaveUsage[] = [
+      { ...leaveUsage, id: 'completed', startDate: '2026-08-01', endDate: '2026-08-02' },
+      { ...leaveUsage, id: 'in-progress', startDate: '2026-08-05', endDate: '2026-08-05' },
+      { ...leaveUsage, id: 'scheduled', startDate: '2026-08-10', endDate: '2026-08-10' },
+      { ...leaveUsage, id: 'canceled', startDate: '2026-08-12', endDate: '2026-08-12', canceled: true },
+    ]
+
+    expect(getLeaveGrantSummary(leaveGrant, usages, '2026-08-05')).toEqual({
+      totalDays: 5,
+      completedDays: 2,
+      scheduledDays: 1,
+      availableDays: 1,
+    })
   })
 
   it('사용 가능한 일수를 넘으면 부족한 일수와 함께 거부한다', () => {

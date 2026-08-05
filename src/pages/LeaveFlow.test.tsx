@@ -43,6 +43,10 @@ describe('보유 휴가 등록 흐름', () => {
     expect(screen.getByText('위로휴가')).toBeInTheDocument()
     expect(screen.getByText('주 40시간 근무')).toBeInTheDocument()
     expect(screen.getByLabelText('2일')).toBeInTheDocument()
+    expect(screen.getByText('총 획득')).toBeInTheDocument()
+    expect(screen.getByText('사용 완료')).toBeInTheDocument()
+    expect(screen.getByText('사용 예정')).toBeInTheDocument()
+    expect(screen.getByText('사용 가능')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(localStorage.getItem(APP_STORAGE_KEY)).toContain('consolation')
