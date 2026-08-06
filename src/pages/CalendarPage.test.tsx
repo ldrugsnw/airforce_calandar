@@ -162,6 +162,12 @@ describe('월간 달력', () => {
     expect(screen.getByRole('button', { name: '상세 닫기' })).toBeInTheDocument()
     expect(screen.queryByLabelText('사용할 보유 휴가')).not.toBeInTheDocument()
 
+    fireEvent.click(screen.getByRole('heading', { name: '달력', level: 1 }))
+    expect(screen.queryByText('등록된 휴가 일정')).not.toBeInTheDocument()
+    expect(screen.getByText(/빈 날짜를 눌러 시작일과 종료일/)).toBeInTheDocument()
+
+    fireEvent.click(eighth)
+
     fireEvent.click(screen.getByRole('button', { name: '일정 수정' }))
     expect(screen.getByLabelText('사용할 보유 휴가')).toHaveValue(leaveGrant.id)
     expect(eighth).toBeDisabled()
@@ -332,6 +338,9 @@ describe('월간 달력', () => {
     expect(screen.getByRole('button', { name: /2026년 8월 4일, 청원휴가/ })).toHaveClass('bg-slate-950')
     expect(screen.getByRole('button', { name: /2026년 8월 5일, 공가/ })).toHaveClass('bg-violet-600')
     expect(screen.getByRole('button', { name: /2026년 8월 31일, 기타/ })).toHaveClass('bg-slate-600')
+    const annualLegendText = screen.getByText('연가 · 정기 연가')
+    expect(annualLegendText).toHaveClass('min-w-0', 'break-words')
+    expect(annualLegendText.previousElementSibling).toHaveClass('shrink-0')
     expect(screen.getByText('기타 · 기타 사유')).toBeInTheDocument()
     expect(screen.queryByText('성과제 · 성과 보상')).not.toBeInTheDocument()
 

@@ -361,13 +361,26 @@ export function CalendarPage() {
     return date >= startDate && date <= endDate
   }
 
+  function dismissSelectedSchedule() {
+    if (editingLeaveUsageId || editingOutingId || isOutingFormOpen) return
+    if (!selectedLeaveUsageId && !selectedOutingId) return
+
+    setSelectedLeaveUsageId(null)
+    setSelectedOutingId(null)
+    setSearchParams({}, { replace: true })
+    setFormMessage(null)
+  }
+
   return (
-    <>
+    <div onClick={dismissSelectedSchedule}>
       <PageHeader
         description={'빈 날짜를 한 번 누르면 외출을, 두 번 누르면 휴가 기간을 등록할 수 있어요.\n등록한 일정은 달력에서 색상과 표시로 구분됩니다.'}
         title="달력"
       />
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section
+        className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-center justify-between gap-3">
           <button
             aria-label="이전 달"
@@ -493,9 +506,11 @@ export function CalendarPage() {
           )) && (
           <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             {visibleMonthLegendGrants.map((grant) => (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600" key={grant.id}>
-                <span className={`size-3 rounded-full ${LEAVE_TYPE_STYLES[grant.type].split(' ')[0]}`} />
-                {getLeaveTypeLabel(grant.type)} · {grant.reason || '사유 없음'}
+              <span className="inline-flex max-w-full items-start gap-1.5 text-xs text-slate-600" key={grant.id}>
+                <span className={`mt-0.5 size-3 shrink-0 rounded-full ${LEAVE_TYPE_STYLES[grant.type].split(' ')[0]}`} />
+                <span className="min-w-0 break-words">
+                  {getLeaveTypeLabel(grant.type)} · {grant.reason || '사유 없음'}
+                </span>
               </span>
             ))}
             {outings.some(
@@ -506,16 +521,20 @@ export function CalendarPage() {
                 visibleMonthStart <= outing.date &&
                 outing.date <= visibleMonthEnd,
             ) && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
-                <span className="size-3 rounded-full bg-orange-500" />
-                외출
+              <span className="inline-flex max-w-full items-start gap-1.5 text-xs text-slate-600">
+                <span className="mt-0.5 size-3 shrink-0 rounded-full bg-orange-500" />
+                <span className="min-w-0 break-words">외출</span>
               </span>
             )}
           </div>
         )}
       </section>
 
-      <section className="mt-5 rounded-3xl bg-slate-50 p-5" aria-live="polite">
+      <section
+        aria-live="polite"
+        className="mt-5 rounded-3xl bg-slate-50 p-5"
+        onClick={(event) => event.stopPropagation()}
+      >
         <p className="text-sm font-semibold text-brand-600">
           {selectedLeaveUsage
             ? '등록된 휴가 일정'
@@ -946,7 +965,7 @@ export function CalendarPage() {
           </p>
         )}
       </section>
-    </>
+    </div>
   )
 }
 
