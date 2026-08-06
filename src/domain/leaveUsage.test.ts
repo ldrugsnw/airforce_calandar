@@ -119,6 +119,31 @@ describe('휴가 사용 기록 계산과 검증', () => {
     ).toMatchObject({ valid: false, reason: 'overlap' })
   })
 
+  it('여러 기존 일정과 이어서 겹치면 전체 중복 기간을 안내한다', () => {
+    const largerGrant = { ...leaveGrant, days: 20 }
+    const usages: LeaveUsage[] = [
+      { ...leaveUsage, id: 'reward', startDate: '2026-08-12', endDate: '2026-08-12' },
+      { ...leaveUsage, id: 'consolation-1', startDate: '2026-08-13', endDate: '2026-08-13' },
+      { ...leaveUsage, id: 'consolation-2', startDate: '2026-08-14', endDate: '2026-08-14' },
+    ]
+
+    expect(
+      validateLeaveUsage(
+        {
+          leaveGrantId: largerGrant.id,
+          startDate: '2026-08-11',
+          endDate: '2026-08-15',
+        },
+        [largerGrant],
+        usages,
+      ),
+    ).toEqual({
+      valid: false,
+      reason: 'overlap',
+      message: '이미 등록된 2026-08-12 ~ 2026-08-14 일정과 겹칩니다.',
+    })
+  })
+
   it('잔여와 중복 조건을 모두 만족하면 저장할 수 있다', () => {
     expect(
       validateLeaveUsage(

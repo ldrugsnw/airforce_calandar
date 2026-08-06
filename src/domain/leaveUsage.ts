@@ -241,22 +241,52 @@ export function validateLeaveUsage(
     }
   }
 
-  const overlappingUsage = otherLeaveUsages.find(
-    (usage) =>
-      !usage.canceled &&
-      doDateRangesOverlap(
-        input.startDate,
-        input.endDate,
-        usage.startDate,
-        usage.endDate,
-      ),
-  )
+  const overlappingRanges = otherLeaveUsages
+    .filter(
+      (usage) =>
+        !usage.canceled &&
+        doDateRangesOverlap(
+          input.startDate,
+          input.endDate,
+          usage.startDate,
+          usage.endDate,
+        ),
+    )
+    .map((usage) => ({
+      startDate:
+        usage.startDate < input.startDate ? input.startDate : usage.startDate,
+      endDate: usage.endDate > input.endDate ? input.endDate : usage.endDate,
+    }))
+    .sort((first, second) => first.startDate.localeCompare(second.startDate))
 
-  if (overlappingUsage) {
+  const mergedOverlappingRanges = overlappingRanges.reduce<
+    { startDate: CalendarDate; endDate: CalendarDate }[]
+  >((ranges, range) => {
+    const previousRange = ranges.at(-1)
+
+    if (
+      previousRange &&
+      range.startDate <= addCalendarDays(previousRange.endDate, 1)
+    ) {
+      if (range.endDate > previousRange.endDate) {
+        previousRange.endDate = range.endDate
+      }
+      return ranges
+    }
+
+    ranges.push({ ...range })
+    return ranges
+  }, [])
+
+  if (mergedOverlappingRanges.length > 0) {
+    const overlappingPeriod = mergedOverlappingRanges
+      .map(({ startDate, endDate }) => `${startDate} ~ ${endDate}`)
+      .join(', ')
+
     return {
       valid: false,
       reason: 'overlap',
-      message: `이미 등록된 ${overlappingUsage.startDate} ~ ${overlappingUsage.endDate} 일정과 겹칩니다.`,
+      message: `이미 등록된 ${overlappingPeriod} 일정과 겹칩니다.`,
     }
   }
 
