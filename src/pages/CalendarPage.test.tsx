@@ -13,10 +13,10 @@ describe('월간 달력', () => {
       </MemoryRouter>,
     )
 
-    const calendarDescription = screen.getByText(/빈 날짜를 두 번 눌러/)
+    const calendarDescription = screen.getByText(/빈 날짜를 한 번 누르면 외출을/)
     expect(calendarDescription).toHaveClass('whitespace-pre-line')
     expect(calendarDescription).toHaveTextContent(
-      '빈 날짜를 두 번 눌러 기간을 선택하세요. 등록한 일정은 휴가 종류별 색상으로 표시됩니다.',
+      '빈 날짜를 한 번 누르면 외출을, 두 번 누르면 휴가 기간을 등록할 수 있어요. 등록한 일정은 달력에서 색상과 표시로 구분됩니다.',
     )
 
     const currentMonth = screen.getByRole('heading', { level: 2 }).textContent
@@ -42,6 +42,56 @@ describe('월간 달력', () => {
     expect(eighth).not.toHaveClass('ring-2', 'ring-offset-1')
   })
 
+  it('빈 날짜를 한 번 눌러 외출 사유를 저장하고 주황색 점으로 표시한다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-05T15:00:00.000Z'))
+
+    render(<MemoryRouter initialEntries={['/calendar']}><App /></MemoryRouter>)
+
+    const outingDate = screen.getByRole('button', { name: '2026년 8월 12일' })
+    fireEvent.click(outingDate)
+
+    expect(
+      screen.getByRole('button', { name: '8월 12일 외출 등록' }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '8월 12일 외출 등록' }))
+    fireEvent.change(screen.getByLabelText('외출 사유'), {
+      target: { value: '개인 용무' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '외출 저장' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '외출 일정이 저장되었습니다.',
+    )
+    expect(outingDate).toHaveAccessibleName(/외출/)
+    expect(outingDate.querySelector('.bg-orange-500')).toBeInTheDocument()
+    expect(screen.getByText('외출')).toBeInTheDocument()
+
+    fireEvent.click(outingDate)
+    expect(screen.getByText('등록된 외출 일정')).toBeInTheDocument()
+    expect(screen.getByText('개인 용무')).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: '외출 취소' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '외출 일정이 취소되었습니다.',
+    )
+    expect(outingDate).not.toHaveAccessibleName(/외출/)
+
+    vi.useRealTimers()
+
+    await waitFor(() => {
+      const storedData = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) ?? '{}')
+      expect(storedData.outings[0]).toMatchObject({
+        date: '2026-08-12',
+        reason: '개인 용무',
+        canceled: true,
+      })
+    })
+
+  })
+
   it('선택한 기간과 보유 휴가를 저장하고 달력에 종류를 표시한다', async () => {
     const leaveGrant: LeaveGrant = {
       id: 'leave-grant-1',
@@ -53,7 +103,7 @@ describe('월간 달력', () => {
       createdAt: '2026-08-01T00:00:00.000Z',
       updatedAt: '2026-08-01T00:00:00.000Z',
     }
-    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [], outings: [] })
 
     render(
       <MemoryRouter initialEntries={['/calendar']}>
@@ -178,6 +228,7 @@ describe('월간 달력', () => {
         baseUsage,
         { ...baseUsage, id: 'consolation-usage', leaveGrantId: 'consolation', startDate: '2026-08-11', endDate: '2026-08-12' },
       ],
+      outings: [],
     })
 
     render(<MemoryRouter initialEntries={['/calendar']}><App /></MemoryRouter>)
@@ -250,6 +301,7 @@ describe('월간 달력', () => {
         { ...baseUsage, id: 'other-usage', leaveGrantId: 'other', startDate: '2026-08-31', endDate: '2026-09-02' },
         { ...baseUsage, id: 'canceled-annual-usage', startDate: '2026-09-03', endDate: '2026-09-03', canceled: true },
       ],
+      outings: [],
     })
 
     render(<MemoryRouter initialEntries={['/calendar']}><App /></MemoryRouter>)

@@ -5,6 +5,7 @@ import {
   type CalendarDate,
 } from './calendarDate'
 import type { LeaveGrant, LeaveType } from './leave'
+import type { Outing } from './outing'
 
 export type LeaveUsage = {
   id: string
@@ -42,7 +43,15 @@ export type ContinuousLeaveSchedule = {
 
 export type LeaveUsageValidation =
   | { valid: true }
-  | { valid: false; reason: 'leaveGrantNotFound' | 'insufficientDays' | 'overlap'; message: string }
+  | {
+      valid: false
+      reason:
+        | 'leaveGrantNotFound'
+        | 'insufficientDays'
+        | 'overlap'
+        | 'outingOverlap'
+      message: string
+    }
 
 export function getLeaveUsageDays(leaveUsage: LeaveUsage) {
   return getInclusiveDayCount(leaveUsage.startDate, leaveUsage.endDate)
@@ -216,6 +225,7 @@ export function validateLeaveUsage(
   leaveGrants: LeaveGrant[],
   leaveUsages: LeaveUsage[],
   excludedUsageId?: string,
+  outings: Outing[] = [],
 ): LeaveUsageValidation {
   const otherLeaveUsages = leaveUsages.filter(
     (leaveUsage) => leaveUsage.id !== excludedUsageId,
@@ -287,6 +297,24 @@ export function validateLeaveUsage(
       valid: false,
       reason: 'overlap',
       message: `이미 등록된 ${overlappingPeriod} 일정과 겹칩니다.`,
+    }
+  }
+
+  const overlappingOutingDates = outings
+    .filter(
+      (outing) =>
+        !outing.canceled &&
+        input.startDate <= outing.date &&
+        outing.date <= input.endDate,
+    )
+    .map((outing) => outing.date)
+    .sort()
+
+  if (overlappingOutingDates.length > 0) {
+    return {
+      valid: false,
+      reason: 'outingOverlap',
+      message: `${overlappingOutingDates.join(', ')}에 외출이 등록되어 있어 휴가 일정을 저장할 수 없습니다.`,
     }
   }
 

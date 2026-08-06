@@ -1,20 +1,23 @@
 import { isLeaveType, type LeaveGrant } from '../domain/leave'
 import { isCalendarDate } from '../domain/calendarDate'
 import type { LeaveUsage } from '../domain/leaveUsage'
+import type { Outing } from '../domain/outing'
 import { initialAppState, type AppState } from './appReducer'
 
 export const APP_STORAGE_KEY = 'airforce-calendar:data'
 
 type StoredAppData = {
-  version: 2
+  version: 3
   leaveGrants: LeaveGrant[]
   leaveUsages: LeaveUsage[]
+  outings: Outing[]
 }
 
 type ParsedStoredAppData = {
   version?: number
   leaveGrants?: unknown
   leaveUsages?: unknown
+  outings?: unknown
 }
 
 function isLeaveGrant(value: unknown): value is LeaveGrant {
@@ -56,6 +59,23 @@ function isLeaveUsage(value: unknown): value is LeaveUsage {
   )
 }
 
+function isOuting(value: unknown): value is Outing {
+  if (!value || typeof value !== 'object') return false
+
+  const outing = value as Record<string, unknown>
+
+  return (
+    typeof outing.id === 'string' &&
+    isCalendarDate(outing.date) &&
+    typeof outing.reason === 'string' &&
+    outing.reason.trim().length > 0 &&
+    typeof outing.canceled === 'boolean' &&
+    (outing.canceledAt === null || typeof outing.canceledAt === 'string') &&
+    typeof outing.createdAt === 'string' &&
+    typeof outing.updatedAt === 'string'
+  )
+}
+
 export function loadAppState(): AppState {
   try {
     const serializedData = localStorage.getItem(APP_STORAGE_KEY)
@@ -76,11 +96,11 @@ export function loadAppState(): AppState {
     const leaveGrants = storedData.leaveGrants
 
     if (storedData.version === 1) {
-      return { leaveGrants, leaveUsages: [] }
+      return { leaveGrants, leaveUsages: [], outings: [] }
     }
 
     if (
-      storedData.version !== 2 ||
+      (storedData.version !== 2 && storedData.version !== 3) ||
       !Array.isArray(storedData.leaveUsages) ||
       !storedData.leaveUsages.every(isLeaveUsage)
     ) {
@@ -100,9 +120,21 @@ export function loadAppState(): AppState {
       return initialAppState
     }
 
+    if (storedData.version === 2) {
+      return { leaveGrants, leaveUsages, outings: [] }
+    }
+
+    if (
+      !Array.isArray(storedData.outings) ||
+      !storedData.outings.every(isOuting)
+    ) {
+      return initialAppState
+    }
+
     return {
       leaveGrants,
       leaveUsages,
+      outings: storedData.outings,
     }
   } catch {
     return initialAppState
@@ -111,9 +143,10 @@ export function loadAppState(): AppState {
 
 export function saveAppState(state: AppState) {
   const storedData: StoredAppData = {
-    version: 2,
+    version: 3,
     leaveGrants: state.leaveGrants,
     leaveUsages: state.leaveUsages,
+    outings: state.outings,
   }
 
   localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(storedData))

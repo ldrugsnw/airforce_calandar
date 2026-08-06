@@ -1,4 +1,5 @@
 import type { LeaveGrant } from './leave'
+import type { Outing } from './outing'
 import {
   createContinuousLeaveSchedules,
   getAvailableDays,
@@ -156,6 +157,36 @@ describe('휴가 사용 기록 계산과 검증', () => {
         [leaveUsage],
       ),
     ).toEqual({ valid: true })
+  })
+
+  it('외출 날짜를 포함한 휴가 등록을 거부한다', () => {
+    const outing: Outing = {
+      id: 'outing-1',
+      date: '2026-08-12',
+      reason: '개인 용무',
+      canceled: false,
+      canceledAt: null,
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    }
+
+    expect(
+      validateLeaveUsage(
+        {
+          leaveGrantId: leaveGrant.id,
+          startDate: '2026-08-11',
+          endDate: '2026-08-12',
+        },
+        [leaveGrant],
+        [],
+        undefined,
+        [outing],
+      ),
+    ).toEqual({
+      valid: false,
+      reason: 'outingOverlap',
+      message: '2026-08-12에 외출이 등록되어 있어 휴가 일정을 저장할 수 없습니다.',
+    })
   })
 
   it('수정할 때는 자기 자신의 일수와 기간을 검증 대상에서 제외한다', () => {

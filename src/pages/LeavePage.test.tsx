@@ -46,6 +46,7 @@ describe('보유 휴가 목록 정리', () => {
         { ...baseUsage, id: 'reward-current', leaveGrantId: 'reward', startDate: '2026-08-06', endDate: '2026-08-06' },
         { ...baseUsage, id: 'reward-scheduled', leaveGrantId: 'reward', startDate: '2026-08-10', endDate: '2026-08-10' },
       ],
+      outings: [],
     })
   })
 

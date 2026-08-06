@@ -22,6 +22,7 @@ import {
   validateLeaveUsage,
   type LeaveUsage,
 } from '../domain/leaveUsage'
+import { validateOuting, type Outing } from '../domain/outing'
 import { useAppDispatch, useAppState } from '../store/appStateContext'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -37,7 +38,7 @@ const LEAVE_TYPE_STYLES: Record<LeaveType, string> = {
 }
 
 export function CalendarPage() {
-  const { leaveGrants, leaveUsages } = useAppState()
+  const { leaveGrants, leaveUsages, outings } = useAppState()
   const dispatch = useAppDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const today = useMemo(() => getKstToday(), [])
@@ -52,6 +53,9 @@ export function CalendarPage() {
   const [selectedLeaveUsageId, setSelectedLeaveUsageId] = useState<string | null>(
     linkedLeaveUsage?.id ?? null,
   )
+  const [selectedOutingId, setSelectedOutingId] = useState<string | null>(null)
+  const [isOutingFormOpen, setIsOutingFormOpen] = useState(false)
+  const [outingReason, setOutingReason] = useState('')
   const [editingLeaveUsageId, setEditingLeaveUsageId] = useState<string | null>(null)
   const [selectedLeaveGrantId, setSelectedLeaveGrantId] = useState('')
   const [formMessage, setFormMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
@@ -98,16 +102,39 @@ export function CalendarPage() {
         selectedLeaveUsage.id,
       )
     : undefined
+  const selectedOuting = outings.find(
+    (outing) => outing.id === selectedOutingId && !outing.canceled,
+  )
 
   function selectDate(date: CalendarDate) {
     if (editingLeaveUsageId) return
 
     const savedUsage = getUsageForDate(date)
+    const savedOuting = outings.find(
+      (outing) => !outing.canceled && outing.date === date,
+    )
 
     if (savedUsage) {
       setSelectedLeaveUsageId(savedUsage.id)
       setSearchParams({ usage: savedUsage.id }, { replace: true })
       setEditingLeaveUsageId(null)
+      setSelectedOutingId(null)
+      setIsOutingFormOpen(false)
+      setOutingReason('')
+      setStartDate(null)
+      setEndDate(null)
+      setSelectedLeaveGrantId('')
+      setFormMessage(null)
+      return
+    }
+
+    if (savedOuting) {
+      setSelectedLeaveUsageId(null)
+      setSelectedOutingId(savedOuting.id)
+      setSearchParams({}, { replace: true })
+      setEditingLeaveUsageId(null)
+      setIsOutingFormOpen(false)
+      setOutingReason('')
       setStartDate(null)
       setEndDate(null)
       setSelectedLeaveGrantId('')
@@ -116,6 +143,9 @@ export function CalendarPage() {
     }
 
     setSelectedLeaveUsageId(null)
+    setSelectedOutingId(null)
+    setIsOutingFormOpen(false)
+    setOutingReason('')
     setSearchParams({}, { replace: true })
     setEditingLeaveUsageId(null)
 
@@ -131,6 +161,51 @@ export function CalendarPage() {
     setStartDate(range.startDate)
     setEndDate(range.endDate)
     setFormMessage(null)
+  }
+
+  function saveOuting() {
+    if (!startDate) return
+
+    const validation = validateOuting(
+      { date: startDate, reason: outingReason },
+      outings,
+      leaveUsages,
+    )
+
+    if (!validation.valid) {
+      setFormMessage({ type: 'error', text: validation.message })
+      return
+    }
+
+    const now = new Date().toISOString()
+    const outing: Outing = {
+      id: crypto.randomUUID(),
+      date: startDate,
+      reason: outingReason.trim(),
+      canceled: false,
+      canceledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    dispatch({ type: 'outing/added', payload: outing })
+    setStartDate(null)
+    setIsOutingFormOpen(false)
+    setOutingReason('')
+    setFormMessage({ type: 'success', text: '외출 일정이 저장되었습니다.' })
+  }
+
+  function cancelSelectedOuting() {
+    if (!selectedOuting) return
+
+    if (!window.confirm('이 외출 일정을 취소할까요?')) return
+
+    dispatch({
+      type: 'outing/canceled',
+      payload: { id: selectedOuting.id, canceledAt: new Date().toISOString() },
+    })
+    setSelectedOutingId(null)
+    setFormMessage({ type: 'success', text: '외출 일정이 취소되었습니다.' })
   }
 
   function getUsageForDate(date: CalendarDate) {
@@ -161,6 +236,7 @@ export function CalendarPage() {
       leaveGrants,
       leaveUsages,
       editingLeaveUsageId ?? undefined,
+      outings,
     )
 
     if (!validation.valid) {
@@ -249,7 +325,7 @@ export function CalendarPage() {
   return (
     <>
       <PageHeader
-        description={'빈 날짜를 두 번 눌러 기간을 선택하세요.\n등록한 일정은 휴가 종류별 색상으로 표시됩니다.'}
+        description={'빈 날짜를 한 번 누르면 외출을, 두 번 누르면 휴가 기간을 등록할 수 있어요.\n등록한 일정은 달력에서 색상과 표시로 구분됩니다.'}
         title="달력"
       />
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -293,6 +369,9 @@ export function CalendarPage() {
             }
 
             const usage = getUsageForDate(calendarDay.date)
+            const outing = outings.find(
+              (item) => !item.canceled && item.date === calendarDay.date,
+            )
             const leaveGrant = usage
               ? leaveGrants.find((grant) => grant.id === usage.leaveGrantId)
               : undefined
@@ -328,9 +407,9 @@ export function CalendarPage() {
 
             return (
               <button
-                aria-label={`${formatCalendarDate(calendarDay.date)}${calendarDay.date === today ? ', 오늘' : ''}${usageLabel ? `, ${usageLabel}` : ''}`}
+                aria-label={`${formatCalendarDate(calendarDay.date)}${calendarDay.date === today ? ', 오늘' : ''}${usageLabel ? `, ${usageLabel}` : ''}${outing ? ', 외출' : ''}`}
                 aria-pressed={isSelected}
-                className={`mx-auto flex h-10 w-full items-center justify-center text-sm font-medium transition ${
+                className={`relative mx-auto flex h-10 w-full items-center justify-center text-sm font-medium transition ${
                   connectsPrevious ? 'rounded-l-none' : 'rounded-l-xl'
                 } ${connectsNext ? 'rounded-r-none' : 'rounded-r-xl'} ${
                   isSelected
@@ -345,18 +424,32 @@ export function CalendarPage() {
                           ? 'text-blue-500 hover:bg-blue-50'
                           : 'text-slate-700 hover:bg-slate-100'
                 }`}
-                disabled={Boolean(editingLeaveUsageId)}
+                disabled={Boolean(editingLeaveUsageId || isOutingFormOpen)}
                 key={calendarDay.date}
                 onClick={() => selectDate(calendarDay.date)}
                 type="button"
               >
-                {calendarDay.day}
+                <span>{calendarDay.day}</span>
+                {outing && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-orange-500 ring-1 ring-white"
+                  />
+                )}
               </button>
             )
           })}
         </div>
 
-        {visibleMonthLegendGrants.length > 0 && (
+        {(visibleMonthLegendGrants.length > 0 ||
+          outings.some(
+            (outing) =>
+              !outing.canceled &&
+              visibleMonthStart !== undefined &&
+              visibleMonthEnd !== undefined &&
+              visibleMonthStart <= outing.date &&
+              outing.date <= visibleMonthEnd,
+          )) && (
           <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             {visibleMonthLegendGrants.map((grant) => (
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-600" key={grant.id}>
@@ -364,6 +457,19 @@ export function CalendarPage() {
                 {getLeaveTypeLabel(grant.type)} · {grant.reason || '사유 없음'}
               </span>
             ))}
+            {outings.some(
+              (outing) =>
+                !outing.canceled &&
+                visibleMonthStart !== undefined &&
+                visibleMonthEnd !== undefined &&
+                visibleMonthStart <= outing.date &&
+                outing.date <= visibleMonthEnd,
+            ) && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="size-3 rounded-full bg-orange-500" />
+                외출
+              </span>
+            )}
           </div>
         )}
       </section>
@@ -372,10 +478,42 @@ export function CalendarPage() {
         <p className="text-sm font-semibold text-brand-600">
           {selectedLeaveUsage
             ? '등록된 휴가 일정'
+            : selectedOuting
+              ? '등록된 외출 일정'
             : editingLeaveUsageId
               ? '휴가 일정 수정'
               : '선택한 휴가 기간'}
         </p>
+        {selectedOuting && (
+          <div className="mt-3 rounded-2xl border border-orange-200 bg-white p-4 shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+              <span className="size-2 rounded-full bg-orange-500" />
+              외출
+            </span>
+            <p className="mt-3 font-semibold text-slate-950">
+              {selectedOuting.reason}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              {formatCalendarDate(selectedOuting.date)}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700"
+                onClick={cancelSelectedOuting}
+                type="button"
+              >
+                외출 취소
+              </button>
+              <button
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                onClick={() => setSelectedOutingId(null)}
+                type="button"
+              >
+                상세 닫기
+              </button>
+            </div>
+          </div>
+        )}
         {selectedLeaveUsage && selectedUsageGrant && (
           <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             {selectedContinuousSchedule && (
@@ -593,7 +731,7 @@ export function CalendarPage() {
             </div>
           </div>
         )}
-        {!selectedLeaveUsage && !editingLeaveUsageId && !startDate && (
+        {!selectedLeaveUsage && !selectedOuting && !editingLeaveUsageId && !startDate && (
           <p className="mt-2 text-sm leading-6 text-slate-500">
             빈 날짜를 눌러 시작일과 종료일을 선택하세요. 등록된 날짜를 누르면 일정 상세를 볼 수 있어요.
           </p>
@@ -601,7 +739,66 @@ export function CalendarPage() {
         {!editingLeaveUsageId && startDate && !endDate && (
           <div className="mt-2">
             <p className="font-semibold text-slate-900">{formatCalendarDate(startDate)}</p>
-            <p className="mt-1 text-sm text-slate-500">종료일을 선택하세요. 앞선 날짜도 선택할 수 있어요.</p>
+            {!isOutingFormOpen ? (
+              <>
+                <p className="mt-1 text-sm text-slate-500">
+                  외출을 등록하거나 다른 날짜를 눌러 휴가 기간을 완성하세요.
+                </p>
+                <button
+                  className="mt-4 min-h-12 w-full rounded-2xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                  onClick={() => {
+                    setIsOutingFormOpen(true)
+                    setFormMessage(null)
+                  }}
+                  type="button"
+                >
+                  {visibleMonth.month}월 {Number(startDate.slice(-2))}일 외출 등록
+                </button>
+              </>
+            ) : (
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-800" htmlFor="outing-reason">
+                  외출 사유
+                  <input
+                    autoFocus
+                    className="mt-2 h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base font-normal text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    id="outing-reason"
+                    onChange={(event) => {
+                      setOutingReason(event.target.value)
+                      setFormMessage(null)
+                    }}
+                    placeholder="예: 개인 용무"
+                    type="text"
+                    value={outingReason}
+                  />
+                </label>
+                {formMessage?.type === 'error' && (
+                  <p className="mt-2 text-sm font-medium text-red-600" role="alert">
+                    {formMessage.text}
+                  </p>
+                )}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    className="min-h-12 rounded-2xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm"
+                    onClick={saveOuting}
+                    type="button"
+                  >
+                    외출 저장
+                  </button>
+                  <button
+                    className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                    onClick={() => {
+                      setIsOutingFormOpen(false)
+                      setOutingReason('')
+                      setFormMessage(null)
+                    }}
+                    type="button"
+                  >
+                    등록 취소
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {!editingLeaveUsageId && startDate && endDate && (

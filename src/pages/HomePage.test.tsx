@@ -29,6 +29,7 @@ describe('홈 다음 휴가', () => {
         baseUsage,
         { ...baseUsage, id: 'consolation-usage', leaveGrantId: 'consolation', startDate: '2026-08-11', endDate: '2026-08-12' },
       ],
+      outings: [],
     })
 
     render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
@@ -58,6 +59,7 @@ describe('홈 다음 휴가', () => {
         baseUsage,
         { ...baseUsage, id: 'next', startDate: '2026-08-10', endDate: '2026-08-11' },
       ],
+      outings: [],
     })
 
     render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)

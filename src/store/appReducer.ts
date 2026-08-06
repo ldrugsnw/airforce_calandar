@@ -1,9 +1,11 @@
 import type { LeaveGrant } from '../domain/leave'
 import type { LeaveUsage } from '../domain/leaveUsage'
+import type { Outing } from '../domain/outing'
 
 export type AppState = {
   leaveGrants: LeaveGrant[]
   leaveUsages: LeaveUsage[]
+  outings: Outing[]
 }
 
 export type AppAction =
@@ -13,10 +15,14 @@ export type AppAction =
   | { type: 'leaveUsage/added'; payload: LeaveUsage }
   | { type: 'leaveUsage/updated'; payload: LeaveUsage }
   | { type: 'leaveUsage/canceled'; payload: { id: string; canceledAt: string } }
+  | { type: 'outing/added'; payload: Outing }
+  | { type: 'outing/updated'; payload: Outing }
+  | { type: 'outing/canceled'; payload: { id: string; canceledAt: string } }
 
 export const initialAppState: AppState = {
   leaveGrants: [],
   leaveUsages: [],
+  outings: [],
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -64,6 +70,32 @@ export function appReducer(state: AppState, action: AppAction): AppState {
                 updatedAt: action.payload.canceledAt,
               }
             : leaveUsage,
+        ),
+      }
+    case 'outing/added':
+      return {
+        ...state,
+        outings: [...state.outings, action.payload],
+      }
+    case 'outing/updated':
+      return {
+        ...state,
+        outings: state.outings.map((outing) =>
+          outing.id === action.payload.id ? action.payload : outing,
+        ),
+      }
+    case 'outing/canceled':
+      return {
+        ...state,
+        outings: state.outings.map((outing) =>
+          outing.id === action.payload.id
+            ? {
+                ...outing,
+                canceled: true,
+                canceledAt: action.payload.canceledAt,
+                updatedAt: action.payload.canceledAt,
+              }
+            : outing,
         ),
       }
     default:

@@ -41,7 +41,7 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
         updatedAt: '2026-08-01T00:00:00.000Z',
       },
     ]
-    saveAppState({ leaveGrants: [summaryGrant], leaveUsages })
+    saveAppState({ leaveGrants: [summaryGrant], leaveUsages, outings: [] })
 
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
@@ -62,7 +62,7 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
   })
 
   it('상세에서 보유 휴가를 수정하고 저장한다', async () => {
-    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [], outings: [] })
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
         <App />
@@ -93,7 +93,7 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
   })
 
   it('확인 후 보유 휴가를 삭제한다', async () => {
-    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [] })
+    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [], outings: [] })
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
@@ -125,7 +125,11 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
       createdAt: '2026-08-01T00:00:00.000Z',
       updatedAt: '2026-08-01T00:00:00.000Z',
     }
-    saveAppState({ leaveGrants: [leaveGrant], leaveUsages: [leaveUsage] })
+    saveAppState({
+      leaveGrants: [leaveGrant],
+      leaveUsages: [leaveUsage],
+      outings: [],
+    })
     render(
       <MemoryRouter initialEntries={['/leave/leave-grant-1']}>
         <App />
