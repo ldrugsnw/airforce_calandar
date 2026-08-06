@@ -69,4 +69,30 @@ describe('보유 휴가 등록 흐름', () => {
     expect(screen.getByText('획득 날짜를 선택해주세요.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '보유 휴가 추가' })).toBeInTheDocument()
   })
+
+  it('작성 중인 폼을 취소할 때 입력 내용 폐기를 확인한다', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(
+      <MemoryRouter initialEntries={['/leave/new']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText(/획득 사유/), {
+      target: { value: '작성 중인 사유' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '취소' }))
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      '작성한 내용을 저장하지 않고 나갈까요?',
+    )
+    expect(screen.getByRole('heading', { name: '보유 휴가 추가' })).toBeInTheDocument()
+
+    confirmSpy.mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: '취소' }))
+    expect(
+      await screen.findByRole('heading', { name: '내 휴가' }),
+    ).toBeInTheDocument()
+    confirmSpy.mockRestore()
+  })
 })

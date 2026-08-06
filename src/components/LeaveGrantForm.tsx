@@ -14,6 +14,7 @@ type LeaveGrantFormProps = {
   onCancel: () => void
   onSubmit: (values: LeaveGrantFormValues) => void
   submitLabel: string
+  validate?: (values: LeaveGrantFormValues) => string | null
 }
 
 type FormErrors = Partial<Record<'type' | 'days' | 'acquiredDate', string>>
@@ -31,8 +32,11 @@ export function LeaveGrantForm({
   onCancel,
   onSubmit,
   submitLabel,
+  validate,
 }: LeaveGrantFormProps) {
   const [errors, setErrors] = useState<FormErrors>({})
+  const [isDirty, setIsDirty] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const values = initialValues ?? emptyValues
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -62,17 +66,44 @@ export function LeaveGrantForm({
       return
     }
 
-    onSubmit({
+    const submittedValues = {
       type: type as LeaveType,
       days,
       acquiredDate,
       reason: formData.get('reason')?.toString().trim() ?? '',
       memo: formData.get('memo')?.toString().trim() ?? '',
-    })
+    }
+    const validationMessage = validate?.(submittedValues) ?? null
+
+    if (validationMessage) {
+      setSubmitError(validationMessage)
+      return
+    }
+
+    onSubmit(submittedValues)
+  }
+
+  function handleCancel() {
+    if (
+      isDirty &&
+      !window.confirm('작성한 내용을 저장하지 않고 나갈까요?')
+    ) {
+      return
+    }
+
+    onCancel()
   }
 
   return (
-    <form className="mt-8 space-y-6" noValidate onSubmit={handleSubmit}>
+    <form
+      className="mt-8 space-y-6"
+      noValidate
+      onChange={() => {
+        setIsDirty(true)
+        setSubmitError(null)
+      }}
+      onSubmit={handleSubmit}
+    >
       <Field label="휴가 종류" required error={errors.type}>
         <div className="relative min-w-0 w-full">
           <select
@@ -142,10 +173,19 @@ export function LeaveGrantForm({
         />
       </Field>
 
+      {submitError && (
+        <p
+          className="rounded-xl bg-red-50 p-3 text-sm font-medium leading-6 text-red-700"
+          role="alert"
+        >
+          {submitError}
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 pt-2">
         <button
           className="min-h-12 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-          onClick={onCancel}
+          onClick={handleCancel}
           type="button"
         >
           취소

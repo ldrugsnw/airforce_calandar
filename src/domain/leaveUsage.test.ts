@@ -2,6 +2,7 @@ import type { LeaveGrant } from './leave'
 import {
   createContinuousLeaveSchedules,
   getAvailableDays,
+  getContinuousLeaveScheduleForUsage,
   getLeaveGrantSummary,
   getCurrentOrNextLeaveSchedule,
   getLeaveScheduleDday,
@@ -170,5 +171,23 @@ describe('휴가 사용 기록 계산과 검증', () => {
     const next = getCurrentOrNextLeaveSchedule(schedules, '2026-08-11')
     expect(next?.startDate).toBe('2026-08-15')
     expect(next && getLeaveScheduleDday(next, '2026-08-11')).toBe(4)
+  })
+
+  it('개별 사용 기록 id로 해당 기록이 속한 연속 일정을 찾는다', () => {
+    const connectedUsage = {
+      ...leaveUsage,
+      id: 'connected',
+      startDate: '2026-08-11' as const,
+      endDate: '2026-08-12' as const,
+    }
+    const schedules = createContinuousLeaveSchedules(
+      [leaveUsage, connectedUsage],
+      [leaveGrant],
+    )
+
+    expect(
+      getContinuousLeaveScheduleForUsage(schedules, connectedUsage.id),
+    ).toMatchObject({ startDate: '2026-08-08', endDate: '2026-08-12' })
+    expect(getContinuousLeaveScheduleForUsage(schedules, 'missing')).toBeUndefined()
   })
 })
