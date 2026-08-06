@@ -75,4 +75,15 @@ describe('외출 검증', () => {
       ),
     ).toEqual({ valid: true })
   })
+
+  it('수정할 때는 자기 자신의 외출을 중복 검사에서 제외한다', () => {
+    expect(
+      validateOuting(
+        { date: outing.date, reason: '변경한 사유' },
+        [outing],
+        [],
+        outing.id,
+      ),
+    ).toEqual({ valid: true })
+  })
 })

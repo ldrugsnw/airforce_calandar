@@ -71,21 +71,41 @@ describe('월간 달력', () => {
     expect(screen.getByText('등록된 외출 일정')).toBeInTheDocument()
     expect(screen.getByText('개인 용무')).toBeInTheDocument()
 
+    fireEvent.click(screen.getByRole('button', { name: '외출 수정' }))
+    expect(screen.getByLabelText('외출 날짜')).toHaveValue('2026-08-12')
+    expect(screen.getByLabelText('외출 사유')).toHaveValue('개인 용무')
+    fireEvent.change(screen.getByLabelText('외출 날짜'), {
+      target: { value: '2026-08-13' },
+    })
+    fireEvent.change(screen.getByLabelText('외출 사유'), {
+      target: { value: '병원 진료' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '외출 일정이 수정되었습니다.',
+    )
+    expect(screen.getByText('병원 진료')).toBeInTheDocument()
+    expect(outingDate).not.toHaveAccessibleName(/외출/)
+    const updatedOutingDate = screen.getByRole('button', {
+      name: /2026년 8월 13일, 외출/,
+    })
+
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: '외출 취소' }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       '외출 일정이 취소되었습니다.',
     )
-    expect(outingDate).not.toHaveAccessibleName(/외출/)
+    expect(updatedOutingDate).not.toHaveAccessibleName(/외출/)
 
     vi.useRealTimers()
 
     await waitFor(() => {
       const storedData = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) ?? '{}')
       expect(storedData.outings[0]).toMatchObject({
-        date: '2026-08-12',
-        reason: '개인 용무',
+        date: '2026-08-13',
+        reason: '병원 진료',
         canceled: true,
       })
     })

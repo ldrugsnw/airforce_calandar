@@ -54,6 +54,7 @@ export function CalendarPage() {
     linkedLeaveUsage?.id ?? null,
   )
   const [selectedOutingId, setSelectedOutingId] = useState<string | null>(null)
+  const [editingOutingId, setEditingOutingId] = useState<string | null>(null)
   const [isOutingFormOpen, setIsOutingFormOpen] = useState(false)
   const [outingReason, setOutingReason] = useState('')
   const [editingLeaveUsageId, setEditingLeaveUsageId] = useState<string | null>(null)
@@ -105,9 +106,12 @@ export function CalendarPage() {
   const selectedOuting = outings.find(
     (outing) => outing.id === selectedOutingId && !outing.canceled,
   )
+  const editingOuting = outings.find(
+    (outing) => outing.id === editingOutingId && !outing.canceled,
+  )
 
   function selectDate(date: CalendarDate) {
-    if (editingLeaveUsageId) return
+    if (editingLeaveUsageId || editingOutingId) return
 
     const savedUsage = getUsageForDate(date)
     const savedOuting = outings.find(
@@ -119,6 +123,7 @@ export function CalendarPage() {
       setSearchParams({ usage: savedUsage.id }, { replace: true })
       setEditingLeaveUsageId(null)
       setSelectedOutingId(null)
+      setEditingOutingId(null)
       setIsOutingFormOpen(false)
       setOutingReason('')
       setStartDate(null)
@@ -131,6 +136,7 @@ export function CalendarPage() {
     if (savedOuting) {
       setSelectedLeaveUsageId(null)
       setSelectedOutingId(savedOuting.id)
+      setEditingOutingId(null)
       setSearchParams({}, { replace: true })
       setEditingLeaveUsageId(null)
       setIsOutingFormOpen(false)
@@ -144,6 +150,7 @@ export function CalendarPage() {
 
     setSelectedLeaveUsageId(null)
     setSelectedOutingId(null)
+    setEditingOutingId(null)
     setIsOutingFormOpen(false)
     setOutingReason('')
     setSearchParams({}, { replace: true })
@@ -170,6 +177,7 @@ export function CalendarPage() {
       { date: startDate, reason: outingReason },
       outings,
       leaveUsages,
+      editingOutingId ?? undefined,
     )
 
     if (!validation.valid) {
@@ -179,20 +187,51 @@ export function CalendarPage() {
 
     const now = new Date().toISOString()
     const outing: Outing = {
-      id: crypto.randomUUID(),
+      id: editingOuting?.id ?? crypto.randomUUID(),
       date: startDate,
       reason: outingReason.trim(),
-      canceled: false,
-      canceledAt: null,
-      createdAt: now,
+      canceled: editingOuting?.canceled ?? false,
+      canceledAt: editingOuting?.canceledAt ?? null,
+      createdAt: editingOuting?.createdAt ?? now,
       updatedAt: now,
     }
 
-    dispatch({ type: 'outing/added', payload: outing })
+    dispatch({
+      type: editingOuting ? 'outing/updated' : 'outing/added',
+      payload: outing,
+    })
+    setSelectedOutingId(editingOuting?.id ?? null)
+    setEditingOutingId(null)
     setStartDate(null)
     setIsOutingFormOpen(false)
     setOutingReason('')
-    setFormMessage({ type: 'success', text: '외출 일정이 저장되었습니다.' })
+    setFormMessage({
+      type: 'success',
+      text: editingOuting
+        ? '외출 일정이 수정되었습니다.'
+        : '외출 일정이 저장되었습니다.',
+    })
+  }
+
+  function editSelectedOuting() {
+    if (!selectedOuting) return
+
+    setEditingOutingId(selectedOuting.id)
+    setSelectedOutingId(null)
+    setStartDate(selectedOuting.date)
+    setEndDate(null)
+    setOutingReason(selectedOuting.reason)
+    setIsOutingFormOpen(true)
+    setFormMessage(null)
+  }
+
+  function stopEditingOuting() {
+    setSelectedOutingId(editingOutingId)
+    setEditingOutingId(null)
+    setStartDate(null)
+    setIsOutingFormOpen(false)
+    setOutingReason('')
+    setFormMessage(null)
   }
 
   function cancelSelectedOuting() {
@@ -424,7 +463,9 @@ export function CalendarPage() {
                           ? 'text-blue-500 hover:bg-blue-50'
                           : 'text-slate-700 hover:bg-slate-100'
                 }`}
-                disabled={Boolean(editingLeaveUsageId || isOutingFormOpen)}
+                disabled={Boolean(
+                  editingLeaveUsageId || editingOutingId || isOutingFormOpen,
+                )}
                 key={calendarDay.date}
                 onClick={() => selectDate(calendarDay.date)}
                 type="button"
@@ -480,6 +521,8 @@ export function CalendarPage() {
             ? '등록된 휴가 일정'
             : selectedOuting
               ? '등록된 외출 일정'
+              : editingOutingId
+                ? '외출 일정 수정'
             : editingLeaveUsageId
               ? '휴가 일정 수정'
               : '선택한 휴가 기간'}
@@ -498,20 +541,27 @@ export function CalendarPage() {
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
+                className="min-h-11 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white"
+                onClick={editSelectedOuting}
+                type="button"
+              >
+                외출 수정
+              </button>
+              <button
                 className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700"
                 onClick={cancelSelectedOuting}
                 type="button"
               >
                 외출 취소
               </button>
-              <button
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
-                onClick={() => setSelectedOutingId(null)}
-                type="button"
-              >
-                상세 닫기
-              </button>
             </div>
+            <button
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              onClick={() => setSelectedOutingId(null)}
+              type="button"
+            >
+              상세 닫기
+            </button>
           </div>
         )}
         {selectedLeaveUsage && selectedUsageGrant && (
@@ -731,7 +781,7 @@ export function CalendarPage() {
             </div>
           </div>
         )}
-        {!selectedLeaveUsage && !selectedOuting && !editingLeaveUsageId && !startDate && (
+        {!selectedLeaveUsage && !selectedOuting && !editingLeaveUsageId && !editingOutingId && !startDate && (
           <p className="mt-2 text-sm leading-6 text-slate-500">
             빈 날짜를 눌러 시작일과 종료일을 선택하세요. 등록된 날짜를 누르면 일정 상세를 볼 수 있어요.
           </p>
@@ -757,11 +807,28 @@ export function CalendarPage() {
               </>
             ) : (
               <div className="mt-4">
+                {editingOutingId && (
+                  <label className="block text-sm font-semibold text-slate-800" htmlFor="outing-date">
+                    외출 날짜
+                    <input
+                      className="calendar-date-input calendar-date-input-centered mt-2 h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base font-normal text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                      id="outing-date"
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          setStartDate(event.target.value as CalendarDate)
+                        }
+                        setFormMessage(null)
+                      }}
+                      type="date"
+                      value={startDate}
+                    />
+                  </label>
+                )}
                 <label className="block text-sm font-semibold text-slate-800" htmlFor="outing-reason">
                   외출 사유
                   <input
-                    autoFocus
-                    className="mt-2 h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base font-normal text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    autoFocus={!editingOutingId}
+                    className={`${editingOutingId ? 'mt-4' : 'mt-2'} h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base font-normal text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100`}
                     id="outing-reason"
                     onChange={(event) => {
                       setOutingReason(event.target.value)
@@ -783,18 +850,18 @@ export function CalendarPage() {
                     onClick={saveOuting}
                     type="button"
                   >
-                    외출 저장
+                    {editingOutingId ? '변경사항 저장' : '외출 저장'}
                   </button>
                   <button
                     className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
-                    onClick={() => {
+                    onClick={editingOutingId ? stopEditingOuting : () => {
                       setIsOutingFormOpen(false)
                       setOutingReason('')
                       setFormMessage(null)
                     }}
                     type="button"
                   >
-                    등록 취소
+                    {editingOutingId ? '수정 취소' : '등록 취소'}
                   </button>
                 </div>
               </div>
