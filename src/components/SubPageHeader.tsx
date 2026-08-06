@@ -14,31 +14,33 @@ export function SubPageHeader({
   title,
 }: SubPageHeaderProps) {
   return (
-    <header className="flex items-start gap-3">
-      <Link
-        aria-label="이전 화면으로 돌아가기"
-        className="mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100"
-        to={backTo}
-      >
-        <svg
-          aria-hidden="true"
-          className="size-5 fill-none stroke-current stroke-2"
-          viewBox="0 0 24 24"
+    <header>
+      <p className="pl-15 text-sm font-semibold text-brand-600">{eyebrow}</p>
+      <div className="mt-1 flex min-w-0 items-center gap-3">
+        <Link
+          aria-label="이전 화면으로 돌아가기"
+          className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl text-slate-600 transition-[background-color,color,transform] duration-150 ease-out hover:bg-slate-100 hover:text-slate-950 active:scale-95 active:bg-slate-200 motion-reduce:transform-none motion-reduce:transition-none"
+          to={backTo}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m15 18-6-6 6-6"
-          />
-        </svg>
-      </Link>
-      <div>
-        <p className="text-sm font-semibold text-brand-600">{eyebrow}</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+          <svg
+            aria-hidden="true"
+            className="size-6 fill-none stroke-current stroke-2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m15 18-6-6 6-6"
+            />
+          </svg>
+        </Link>
+        <h1 className="min-w-0 text-2xl font-bold tracking-tight text-slate-950">
           {title}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
       </div>
+      <p className="mt-2 pl-15 text-sm leading-6 text-slate-500">
+        {description}
+      </p>
     </header>
   )
 }

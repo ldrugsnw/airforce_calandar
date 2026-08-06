@@ -11,6 +11,11 @@ describe('앱 기본 화면 이동', () => {
     )
 
     expect(screen.getByRole('heading', { name: '홈' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '주요 화면' })).toHaveClass(
+      'bottom-navigation',
+      'bottom-0',
+      'bg-white',
+    )
 
     fireEvent.click(screen.getByRole('link', { name: '달력' }))
     expect(screen.getByRole('heading', { name: '달력' })).toBeInTheDocument()

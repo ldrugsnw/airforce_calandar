@@ -55,7 +55,7 @@ export function BottomNavigation() {
   return (
     <nav
       aria-label="주요 화면"
-      className="fixed inset-x-0 bottom-0 z-10 mx-auto w-full max-w-lg border-t border-slate-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur"
+      className="bottom-navigation fixed inset-x-0 bottom-0 z-10 mx-auto w-full max-w-lg border-t border-slate-200 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_12px_rgba(15,23,42,0.04)]"
     >
       <ul className="grid grid-cols-3 gap-2">
         {navigationItems.map((item) => (

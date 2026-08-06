@@ -31,7 +31,9 @@ describe('월간 달력', () => {
     expect(screen.getByText(/주말과 공휴일을 포함해 총/)).toHaveTextContent('총 3일이에요.')
     expect(eighth).toHaveAttribute('aria-pressed', 'true')
     expect(tenth).toHaveAttribute('aria-pressed', 'true')
-    expect(eighth).toHaveClass('bg-blue-100')
+    expect(eighth).toHaveClass('bg-blue-100', 'rounded-r-none')
+    expect(tenth).toHaveClass('bg-blue-100', 'rounded-l-none')
+    expect(eighth).not.toHaveClass('ring-2', 'ring-offset-1')
   })
 
   it('선택한 기간과 보유 휴가를 저장하고 달력에 종류를 표시한다', async () => {

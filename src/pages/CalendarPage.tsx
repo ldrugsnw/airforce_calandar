@@ -300,26 +300,41 @@ export function CalendarPage() {
             const schedule = continuousSchedules.find(
               (item) => item.startDate <= calendarDay.date && calendarDay.date <= item.endDate,
             )
-            const connectsPrevious = Boolean(
-              schedule &&
+            const isSelected = isInSelectedRange(calendarDay.date)
+            const selectedConnectsPrevious = Boolean(
+              isSelected &&
               index % 7 !== 0 &&
-              schedule.startDate <= addCalendarDays(calendarDay.date, -1),
+              isInSelectedRange(addCalendarDays(calendarDay.date, -1)),
+            )
+            const selectedConnectsNext = Boolean(
+              isSelected &&
+              index % 7 !== 6 &&
+              isInSelectedRange(addCalendarDays(calendarDay.date, 1)),
+            )
+            const connectsPrevious = Boolean(
+              isSelected
+                ? selectedConnectsPrevious
+                : schedule &&
+                    index % 7 !== 0 &&
+                    schedule.startDate <= addCalendarDays(calendarDay.date, -1),
             )
             const connectsNext = Boolean(
-              schedule &&
-              index % 7 !== 6 &&
-              addCalendarDays(calendarDay.date, 1) <= schedule.endDate,
+              isSelected
+                ? selectedConnectsNext
+                : schedule &&
+                    index % 7 !== 6 &&
+                    addCalendarDays(calendarDay.date, 1) <= schedule.endDate,
             )
 
             return (
               <button
                 aria-label={`${formatCalendarDate(calendarDay.date)}${calendarDay.date === today ? ', 오늘' : ''}${usageLabel ? `, ${usageLabel}` : ''}`}
-                aria-pressed={isInSelectedRange(calendarDay.date)}
+                aria-pressed={isSelected}
                 className={`mx-auto flex h-10 w-full items-center justify-center text-sm font-medium transition ${
                   connectsPrevious ? 'rounded-l-none' : 'rounded-l-xl'
                 } ${connectsNext ? 'rounded-r-none' : 'rounded-r-xl'} ${
-                  isInSelectedRange(calendarDay.date)
-                    ? 'bg-blue-100 text-blue-950 shadow-sm ring-2 ring-blue-300 ring-offset-1'
+                  isSelected
+                    ? 'bg-blue-100 text-blue-950'
                     : leaveGrant
                       ? LEAVE_TYPE_STYLES[leaveGrant.type]
                     : calendarDay.date === today
