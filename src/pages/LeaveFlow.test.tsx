@@ -40,13 +40,15 @@ describe('보유 휴가 등록 흐름', () => {
     expect(
       await screen.findByRole('heading', { name: '내 휴가' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('위로휴가')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: '위로휴가 2일 상세 보기' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('주 40시간 근무')).toBeInTheDocument()
     expect(screen.getByLabelText('2일')).toBeInTheDocument()
     expect(screen.getByText('총 획득')).toBeInTheDocument()
-    expect(screen.getByText('사용 완료')).toBeInTheDocument()
+    expect(screen.getAllByText('사용 완료')).toHaveLength(2)
     expect(screen.getByText('사용 예정')).toBeInTheDocument()
-    expect(screen.getByText('사용 가능')).toBeInTheDocument()
+    expect(screen.getAllByText('사용 가능')).toHaveLength(3)
 
     await waitFor(() => {
       expect(localStorage.getItem(APP_STORAGE_KEY)).toContain('consolation')
@@ -89,7 +91,9 @@ describe('보유 휴가 등록 흐름', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: '저장' }))
 
-    expect(await screen.findByText('공가')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: '공가 1일 상세 보기' }),
+    ).toBeInTheDocument()
     await waitFor(() => {
       expect(localStorage.getItem(APP_STORAGE_KEY)).toContain('official')
     })

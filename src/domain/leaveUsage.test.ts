@@ -60,9 +60,29 @@ describe('휴가 사용 기록 계산과 검증', () => {
     expect(getLeaveGrantSummary(leaveGrant, usages, '2026-08-05')).toEqual({
       totalDays: 5,
       completedDays: 2,
+      inProgressDays: 1,
       scheduledDays: 1,
       availableDays: 1,
     })
+  })
+
+  it('총 획득 일수는 사용 가능과 모든 사용 상태의 합계와 일치한다', () => {
+    const summary = getLeaveGrantSummary(
+      leaveGrant,
+      [
+        { ...leaveUsage, id: 'completed', startDate: '2026-08-01', endDate: '2026-08-01' },
+        { ...leaveUsage, id: 'in-progress', startDate: '2026-08-05', endDate: '2026-08-05' },
+        { ...leaveUsage, id: 'scheduled', startDate: '2026-08-10', endDate: '2026-08-11' },
+      ],
+      '2026-08-05',
+    )
+
+    expect(
+      summary.availableDays +
+        summary.scheduledDays +
+        summary.inProgressDays +
+        summary.completedDays,
+    ).toBe(summary.totalDays)
   })
 
   it('사용 가능한 일수를 넘으면 부족한 일수와 함께 거부한다', () => {

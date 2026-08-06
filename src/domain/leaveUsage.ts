@@ -22,6 +22,7 @@ export type LeaveUsageStatus = 'scheduled' | 'inProgress' | 'completed'
 export type LeaveGrantSummary = {
   totalDays: number
   completedDays: number
+  inProgressDays: number
   scheduledDays: number
   availableDays: number
 }
@@ -168,6 +169,8 @@ export function getLeaveGrantSummary(
         ...summary,
         completedDays:
           summary.completedDays + (status === 'completed' ? usageDays : 0),
+        inProgressDays:
+          summary.inProgressDays + (status === 'inProgress' ? usageDays : 0),
         scheduledDays:
           summary.scheduledDays + (status === 'scheduled' ? usageDays : 0),
         availableDays: summary.availableDays - usageDays,
@@ -176,6 +179,7 @@ export function getLeaveGrantSummary(
     {
       totalDays: leaveGrant.days,
       completedDays: 0,
+      inProgressDays: 0,
       scheduledDays: 0,
       availableDays: leaveGrant.days,
     },
