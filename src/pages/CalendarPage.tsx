@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { PageHeader } from '../components/PageHeader'
 import {
   addCalendarDays,
@@ -16,6 +16,7 @@ import { getLeaveTypeLabel, type LeaveType } from '../domain/leave'
 import {
   createContinuousLeaveSchedules,
   getAvailableDays,
+  getContinuousLeaveScheduleForUsage,
   getLeaveUsageStatus,
   getLeaveUsageStatusLabel,
   validateLeaveUsage,
@@ -37,11 +38,19 @@ const LEAVE_TYPE_STYLES: Record<LeaveType, string> = {
 export function CalendarPage() {
   const { leaveGrants, leaveUsages } = useAppState()
   const dispatch = useAppDispatch()
+  const [searchParams, setSearchParams] = useSearchParams()
   const today = useMemo(() => getKstToday(), [])
-  const [visibleMonth, setVisibleMonth] = useState(() => getCalendarMonth(today))
+  const linkedLeaveUsage = leaveUsages.find(
+    (usage) => usage.id === searchParams.get('usage') && !usage.canceled,
+  )
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    getCalendarMonth(linkedLeaveUsage?.startDate ?? today),
+  )
   const [startDate, setStartDate] = useState<CalendarDate | null>(null)
   const [endDate, setEndDate] = useState<CalendarDate | null>(null)
-  const [selectedLeaveUsageId, setSelectedLeaveUsageId] = useState<string | null>(null)
+  const [selectedLeaveUsageId, setSelectedLeaveUsageId] = useState<string | null>(
+    linkedLeaveUsage?.id ?? null,
+  )
   const [editingLeaveUsageId, setEditingLeaveUsageId] = useState<string | null>(null)
   const [selectedLeaveGrantId, setSelectedLeaveGrantId] = useState('')
   const [formMessage, setFormMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
@@ -67,6 +76,12 @@ export function CalendarPage() {
         (leaveGrant) => leaveGrant.id === selectedLeaveUsage.leaveGrantId,
       )
     : undefined
+  const selectedContinuousSchedule = selectedLeaveUsage
+    ? getContinuousLeaveScheduleForUsage(
+        continuousSchedules,
+        selectedLeaveUsage.id,
+      )
+    : undefined
 
   function selectDate(date: CalendarDate) {
     if (editingLeaveUsageId) return
@@ -75,6 +90,7 @@ export function CalendarPage() {
 
     if (savedUsage) {
       setSelectedLeaveUsageId(savedUsage.id)
+      setSearchParams({ usage: savedUsage.id }, { replace: true })
       setEditingLeaveUsageId(null)
       setStartDate(null)
       setEndDate(null)
@@ -84,6 +100,7 @@ export function CalendarPage() {
     }
 
     setSelectedLeaveUsageId(null)
+    setSearchParams({}, { replace: true })
     setEditingLeaveUsageId(null)
 
     if (!startDate || endDate) {
@@ -152,6 +169,7 @@ export function CalendarPage() {
       payload: leaveUsage,
     })
     setSelectedLeaveUsageId(null)
+    setSearchParams({}, { replace: true })
     setEditingLeaveUsageId(null)
     setStartDate(null)
     setEndDate(null)
@@ -172,11 +190,15 @@ export function CalendarPage() {
     setSelectedLeaveGrantId(selectedLeaveUsage.leaveGrantId)
     setEditingLeaveUsageId(selectedLeaveUsage.id)
     setSelectedLeaveUsageId(null)
+    setSearchParams({}, { replace: true })
     setFormMessage(null)
   }
 
   function stopEditingLeaveUsage() {
     setSelectedLeaveUsageId(editingLeaveUsageId)
+    if (editingLeaveUsageId) {
+      setSearchParams({ usage: editingLeaveUsageId }, { replace: true })
+    }
     setEditingLeaveUsageId(null)
     setStartDate(null)
     setEndDate(null)
@@ -198,6 +220,7 @@ export function CalendarPage() {
       payload: { id: selectedLeaveUsage.id, canceledAt: new Date().toISOString() },
     })
     setSelectedLeaveUsageId(null)
+    setSearchParams({}, { replace: true })
     setFormMessage({ type: 'success', text: '휴가 사용 일정이 취소되었습니다.' })
   }
 
@@ -326,6 +349,58 @@ export function CalendarPage() {
         </p>
         {selectedLeaveUsage && selectedUsageGrant && (
           <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            {selectedContinuousSchedule && (
+              <section
+                aria-labelledby="continuous-schedule-title"
+                className="rounded-2xl bg-slate-950 p-4 text-white"
+              >
+                <p className="text-xs font-semibold text-blue-200">연결된 전체 일정</p>
+                <h3
+                  className="mt-2 text-base font-bold"
+                  id="continuous-schedule-title"
+                >
+                  {formatCalendarDate(selectedContinuousSchedule.startDate)} ~{' '}
+                  {formatCalendarDate(selectedContinuousSchedule.endDate)}
+                </h3>
+                <p className="mt-1 text-sm text-slate-300">
+                  총 {selectedContinuousSchedule.totalDays}일 ·{' '}
+                  {selectedContinuousSchedule.composition
+                    .map(
+                      ({ days, type }) =>
+                        `${getLeaveTypeLabel(type)} ${days}일`,
+                    )
+                    .join(' + ')}
+                </p>
+                <ul className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                  {selectedContinuousSchedule.usages.map((usage) => {
+                    const grant = leaveGrants.find(
+                      (item) => item.id === usage.leaveGrantId,
+                    )
+                    if (!grant) return null
+
+                    return (
+                      <li
+                        className="flex flex-col items-start justify-between gap-1 text-xs sm:flex-row sm:items-center sm:gap-3"
+                        key={usage.id}
+                      >
+                        <span className="font-semibold">
+                          {getLeaveTypeLabel(grant.type)}
+                          {usage.id === selectedLeaveUsage.id && (
+                            <span className="ml-1 text-blue-200">(선택한 기록)</span>
+                          )}
+                        </span>
+                        <span className="break-words text-left text-slate-300 sm:text-right">
+                          {usage.startDate} ~ {usage.endDate}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )}
+            <p className="mt-5 text-xs font-semibold text-brand-600">
+              선택한 개별 기록
+            </p>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span
@@ -388,7 +463,10 @@ export function CalendarPage() {
             </div>
             <button
               className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"
-              onClick={() => setSelectedLeaveUsageId(null)}
+              onClick={() => {
+                setSelectedLeaveUsageId(null)
+                setSearchParams({}, { replace: true })
+              }}
               type="button"
             >
               상세 닫기

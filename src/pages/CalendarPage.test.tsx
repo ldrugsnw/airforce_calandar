@@ -148,6 +148,8 @@ describe('월간 달력', () => {
   })
 
   it('종류별 색상을 유지하면서 인접한 기록의 경계를 연결한다', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-05T15:00:00.000Z'))
     const leaveGrants: LeaveGrant[] = [
       {
         id: 'annual', type: 'annual', days: 3, acquiredDate: '2026-08-01', reason: '정기 연가', memo: '',
@@ -176,5 +178,24 @@ describe('월간 달력', () => {
     const consolationStart = screen.getByRole('button', { name: /2026년 8월 11일, 위로휴가/ })
     expect(annualEnd).toHaveClass('bg-blue-600', 'rounded-r-none')
     expect(consolationStart).toHaveClass('bg-amber-300', 'rounded-l-none')
+
+    fireEvent.click(annualEnd)
+    expect(screen.getByText('연결된 전체 일정')).toBeInTheDocument()
+    expect(screen.getByText('총 5일 · 연가 3일 + 위로휴가 2일')).toBeInTheDocument()
+    expect(screen.getByText(/\(선택한 기록\)/)).toBeInTheDocument()
+    expect(screen.getByText('선택한 개별 기록')).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: '일정 취소' }))
+    fireEvent.click(consolationStart)
+
+    expect(screen.getByText('총 2일 · 위로휴가 2일')).toBeInTheDocument()
+    expect(screen.queryByText('총 5일 · 연가 3일 + 위로휴가 2일')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('link', { name: '홈' }))
+    expect(screen.getByText('다음 휴가까지 D-5')).toBeInTheDocument()
+    expect(screen.getByText('총 2일')).toBeInTheDocument()
+
+    vi.useRealTimers()
   })
 })

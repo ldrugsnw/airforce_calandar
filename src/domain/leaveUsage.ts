@@ -114,6 +114,15 @@ export function getCurrentOrNextLeaveSchedule(
   return currentSchedule ?? schedules.find((schedule) => schedule.startDate > today)
 }
 
+export function getContinuousLeaveScheduleForUsage(
+  schedules: ContinuousLeaveSchedule[],
+  leaveUsageId: string,
+) {
+  return schedules.find((schedule) =>
+    schedule.usages.some((usage) => usage.id === leaveUsageId),
+  )
+}
+
 export function getLeaveScheduleDday(
   schedule: ContinuousLeaveSchedule,
   today: CalendarDate,
