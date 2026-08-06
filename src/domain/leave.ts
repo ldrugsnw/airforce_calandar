@@ -2,6 +2,7 @@ export const LEAVE_TYPES = [
   { value: 'annual', label: '연가' },
   { value: 'reward', label: '포상휴가' },
   { value: 'consolation', label: '위로휴가' },
+  { value: 'official', label: '공가' },
   { value: 'petition', label: '청원휴가' },
   { value: 'performance', label: '성과제' },
   { value: 'other', label: '기타' },

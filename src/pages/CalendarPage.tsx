@@ -28,10 +28,11 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 const LEAVE_TYPE_STYLES: Record<LeaveType, string> = {
   annual: 'bg-blue-600 text-white',
-  reward: 'bg-emerald-600 text-white',
+  reward: 'bg-red-600 text-white',
   consolation: 'bg-amber-300 text-amber-950',
-  petition: 'bg-violet-600 text-white',
-  performance: 'bg-cyan-600 text-white',
+  official: 'bg-violet-600 text-white',
+  petition: 'bg-slate-950 text-white',
+  performance: 'bg-green-600 text-white',
   other: 'bg-slate-600 text-white',
 }
 
@@ -55,6 +56,21 @@ export function CalendarPage() {
   const [selectedLeaveGrantId, setSelectedLeaveGrantId] = useState('')
   const [formMessage, setFormMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const monthGrid = useMemo(() => createMonthGrid(visibleMonth), [visibleMonth])
+  const visibleMonthStart = monthGrid.find((calendarDay) => calendarDay)?.date
+  const visibleMonthEnd = [...monthGrid]
+    .reverse()
+    .find((calendarDay) => calendarDay)?.date
+  const visibleMonthLegendGrants = leaveGrants.filter((grant) =>
+    leaveUsages.some(
+      (usage) =>
+        !usage.canceled &&
+        usage.leaveGrantId === grant.id &&
+        visibleMonthStart !== undefined &&
+        visibleMonthEnd !== undefined &&
+        usage.startDate <= visibleMonthEnd &&
+        visibleMonthStart <= usage.endDate,
+    ),
+  )
   const continuousSchedules = useMemo(
     () => createContinuousLeaveSchedules(leaveUsages, leaveGrants),
     [leaveGrants, leaveUsages],
@@ -325,16 +341,14 @@ export function CalendarPage() {
           })}
         </div>
 
-        {leaveUsages.some((usage) => !usage.canceled) && (
+        {visibleMonthLegendGrants.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            {leaveGrants
-              .filter((grant) => leaveUsages.some((usage) => !usage.canceled && usage.leaveGrantId === grant.id))
-              .map((grant) => (
-                <span className="inline-flex items-center gap-1.5 text-xs text-slate-600" key={grant.id}>
-                  <span className={`size-3 rounded-full ${LEAVE_TYPE_STYLES[grant.type].split(' ')[0]}`} />
-                  {getLeaveTypeLabel(grant.type)} · {grant.reason || '사유 없음'}
-                </span>
-              ))}
+            {visibleMonthLegendGrants.map((grant) => (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600" key={grant.id}>
+                <span className={`size-3 rounded-full ${LEAVE_TYPE_STYLES[grant.type].split(' ')[0]}`} />
+                {getLeaveTypeLabel(grant.type)} · {grant.reason || '사유 없음'}
+              </span>
+            ))}
           </div>
         )}
       </section>

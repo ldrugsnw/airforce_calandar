@@ -19,6 +19,22 @@ describe('앱 상태 브라우저 저장', () => {
     expect(loadAppState()).toEqual({ leaveGrants: [leaveGrant], leaveUsages: [] })
   })
 
+  it('공가 보유 휴가를 유효한 형식으로 복원한다', () => {
+    const officialLeaveGrant: LeaveGrant = {
+      ...leaveGrant,
+      id: 'official-leave-grant',
+      type: 'official',
+      reason: '공무 수행',
+    }
+
+    saveAppState({ leaveGrants: [officialLeaveGrant], leaveUsages: [] })
+
+    expect(loadAppState()).toEqual({
+      leaveGrants: [officialLeaveGrant],
+      leaveUsages: [],
+    })
+  })
+
   it('1형식의 보유 휴가를 잃지 않고 2형식 상태로 불러온다', () => {
     localStorage.setItem(
       APP_STORAGE_KEY,

@@ -198,4 +198,70 @@ describe('월간 달력', () => {
 
     vi.useRealTimers()
   })
+
+  it('표시 월에 겹치는 사용 기록만 범례에 표시하고 확정된 종류별 색상을 적용한다', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-05T15:00:00.000Z'))
+    const leaveGrants: LeaveGrant[] = [
+      ['annual', 'annual', '정기 연가'],
+      ['reward', 'reward', '우수 포상'],
+      ['consolation', 'consolation', '근무 위로'],
+      ['official', 'official', '공무 수행'],
+      ['petition', 'petition', '가족 행사'],
+      ['performance', 'performance', '성과 보상'],
+      ['other', 'other', '기타 사유'],
+    ].map(([id, type, reason]) => ({
+      id,
+      type: type as LeaveGrant['type'],
+      days: 3,
+      acquiredDate: '2026-08-01',
+      reason,
+      memo: '',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    }))
+    const baseUsage: LeaveUsage = {
+      id: 'annual-usage',
+      leaveGrantId: 'annual',
+      startDate: '2026-08-01',
+      endDate: '2026-08-01',
+      canceled: false,
+      canceledAt: null,
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    }
+    saveAppState({
+      leaveGrants,
+      leaveUsages: [
+        baseUsage,
+        { ...baseUsage, id: 'reward-usage', leaveGrantId: 'reward', startDate: '2026-08-02', endDate: '2026-08-02' },
+        { ...baseUsage, id: 'consolation-usage', leaveGrantId: 'consolation', startDate: '2026-08-03', endDate: '2026-08-03' },
+        { ...baseUsage, id: 'petition-usage', leaveGrantId: 'petition', startDate: '2026-08-04', endDate: '2026-08-04' },
+        { ...baseUsage, id: 'official-usage', leaveGrantId: 'official', startDate: '2026-08-05', endDate: '2026-08-05' },
+        { ...baseUsage, id: 'performance-usage', leaveGrantId: 'performance', startDate: '2026-09-01', endDate: '2026-09-01' },
+        { ...baseUsage, id: 'other-usage', leaveGrantId: 'other', startDate: '2026-08-31', endDate: '2026-09-02' },
+        { ...baseUsage, id: 'canceled-annual-usage', startDate: '2026-09-03', endDate: '2026-09-03', canceled: true },
+      ],
+    })
+
+    render(<MemoryRouter initialEntries={['/calendar']}><App /></MemoryRouter>)
+
+    expect(screen.getByRole('button', { name: /2026년 8월 1일, 연가/ })).toHaveClass('bg-blue-600')
+    expect(screen.getByRole('button', { name: /2026년 8월 2일, 포상휴가/ })).toHaveClass('bg-red-600')
+    expect(screen.getByRole('button', { name: /2026년 8월 3일, 위로휴가/ })).toHaveClass('bg-amber-300')
+    expect(screen.getByRole('button', { name: /2026년 8월 4일, 청원휴가/ })).toHaveClass('bg-slate-950')
+    expect(screen.getByRole('button', { name: /2026년 8월 5일, 공가/ })).toHaveClass('bg-violet-600')
+    expect(screen.getByRole('button', { name: /2026년 8월 31일, 기타/ })).toHaveClass('bg-slate-600')
+    expect(screen.getByText('기타 · 기타 사유')).toBeInTheDocument()
+    expect(screen.queryByText('성과제 · 성과 보상')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '다음 달' }))
+
+    expect(screen.getByRole('button', { name: /2026년 9월 1일, 성과제/ })).toHaveClass('bg-green-600')
+    expect(screen.getByText('성과제 · 성과 보상')).toBeInTheDocument()
+    expect(screen.getByText('기타 · 기타 사유')).toBeInTheDocument()
+    expect(screen.queryByText('연가 · 정기 연가')).not.toBeInTheDocument()
+
+    vi.useRealTimers()
+  })
 })

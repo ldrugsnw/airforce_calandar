@@ -70,6 +70,31 @@ describe('보유 휴가 등록 흐름', () => {
     expect(screen.getByRole('heading', { name: '보유 휴가 추가' })).toBeInTheDocument()
   })
 
+  it('공가를 보유 휴가로 등록하고 저장한다', async () => {
+    render(
+      <MemoryRouter initialEntries={['/leave/new']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('option', { name: '공가' })).toHaveValue('official')
+    fireEvent.change(screen.getByLabelText(/휴가 종류/), {
+      target: { value: 'official' },
+    })
+    fireEvent.change(screen.getByLabelText(/획득 일수/), {
+      target: { value: '1' },
+    })
+    fireEvent.change(screen.getByLabelText(/획득 날짜/), {
+      target: { value: '2026-08-05' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText('공가')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(localStorage.getItem(APP_STORAGE_KEY)).toContain('official')
+    })
+  })
+
   it('작성 중인 폼을 취소할 때 입력 내용 폐기를 확인한다', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(
