@@ -4,7 +4,7 @@ import {
   getAvailableDays,
   getContinuousLeaveScheduleForUsage,
   getLeaveGrantSummary,
-  getCurrentOrNextLeaveSchedule,
+  getCurrentAndNextLeaveSchedules,
   getLeaveScheduleDday,
   getLeaveUsageStatus,
   getLeaveUsageStatusLabel,
@@ -158,7 +158,7 @@ describe('휴가 사용 기록 계산과 검증', () => {
     expect(schedules[1]).toMatchObject({ startDate: '2026-08-14', totalDays: 1 })
   })
 
-  it('KST 오늘을 포함한 일정을 우선하고 없으면 가장 가까운 미래 일정의 D-day를 계산한다', () => {
+  it('KST 오늘을 포함한 일정과 가장 가까운 미래 일정을 함께 선택한다', () => {
     const schedules = createContinuousLeaveSchedules(
       [
         leaveUsage,
@@ -167,10 +167,23 @@ describe('휴가 사용 기록 계산과 검증', () => {
       [leaveGrant],
     )
 
-    expect(getCurrentOrNextLeaveSchedule(schedules, '2026-08-09')?.startDate).toBe('2026-08-08')
-    const next = getCurrentOrNextLeaveSchedule(schedules, '2026-08-11')
-    expect(next?.startDate).toBe('2026-08-15')
-    expect(next && getLeaveScheduleDday(next, '2026-08-11')).toBe(4)
+    const duringCurrent = getCurrentAndNextLeaveSchedules(
+      schedules,
+      '2026-08-09',
+    )
+    expect(duringCurrent.currentSchedule?.startDate).toBe('2026-08-08')
+    expect(duringCurrent.nextSchedule?.startDate).toBe('2026-08-15')
+
+    const afterCurrent = getCurrentAndNextLeaveSchedules(
+      schedules,
+      '2026-08-11',
+    )
+    expect(afterCurrent.currentSchedule).toBeUndefined()
+    expect(afterCurrent.nextSchedule?.startDate).toBe('2026-08-15')
+    expect(
+      afterCurrent.nextSchedule &&
+        getLeaveScheduleDday(afterCurrent.nextSchedule, '2026-08-11'),
+    ).toBe(4)
   })
 
   it('개별 사용 기록 id로 해당 기록이 속한 연속 일정을 찾는다', () => {

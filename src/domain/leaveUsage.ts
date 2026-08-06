@@ -103,15 +103,16 @@ export function createContinuousLeaveSchedules(
   })
 }
 
-export function getCurrentOrNextLeaveSchedule(
+export function getCurrentAndNextLeaveSchedules(
   schedules: ContinuousLeaveSchedule[],
   today: CalendarDate,
 ) {
   const currentSchedule = schedules.find(
     (schedule) => schedule.startDate <= today && today <= schedule.endDate,
   )
+  const nextSchedule = schedules.find((schedule) => schedule.startDate > today)
 
-  return currentSchedule ?? schedules.find((schedule) => schedule.startDate > today)
+  return { currentSchedule, nextSchedule }
 }
 
 export function getContinuousLeaveScheduleForUsage(

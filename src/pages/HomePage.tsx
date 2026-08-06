@@ -5,8 +5,9 @@ import { formatCalendarDate, getKstToday } from '../domain/calendarDate'
 import { getLeaveTypeLabel } from '../domain/leave'
 import {
   createContinuousLeaveSchedules,
-  getCurrentOrNextLeaveSchedule,
+  getCurrentAndNextLeaveSchedules,
   getLeaveScheduleDday,
+  type ContinuousLeaveSchedule,
 } from '../domain/leaveUsage'
 import { useAppState } from '../store/appStateContext'
 
@@ -14,8 +15,12 @@ export function HomePage() {
   const { leaveGrants, leaveUsages } = useAppState()
   const today = getKstToday()
   const schedules = createContinuousLeaveSchedules(leaveUsages, leaveGrants)
-  const nextSchedule = getCurrentOrNextLeaveSchedule(schedules, today)
+  const { currentSchedule, nextSchedule } = getCurrentAndNextLeaveSchedules(
+    schedules,
+    today,
+  )
   const dday = nextSchedule ? getLeaveScheduleDday(nextSchedule, today) : null
+  const hasCurrentOrNextSchedule = Boolean(currentSchedule || nextSchedule)
 
   return (
     <>
@@ -23,28 +28,25 @@ export function HomePage() {
         description="다음 휴가와 사용할 수 있는 휴가를 빠르게 확인하세요."
         title="홈"
       />
-      {nextSchedule ? (
-        <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-sm">
-          <p className="text-sm font-semibold text-blue-200">
-            {dday === 0 ? '오늘 휴가 시작' : dday && dday < 0 ? '현재 휴가 중' : `다음 휴가까지 D-${dday}`}
-          </p>
-          <h2 className="mt-3 text-2xl font-bold tracking-tight">
-            {formatCalendarDate(nextSchedule.startDate)} ~{' '}
-            {formatCalendarDate(nextSchedule.endDate)}
-          </h2>
-          <p className="mt-2 text-sm text-slate-300">총 {nextSchedule.totalDays}일</p>
-          <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold leading-6">
-            {nextSchedule.composition
-              .map(({ days, type }) => `${getLeaveTypeLabel(type)} ${days}일`)
-              .join(' + ')}
-          </p>
-          <Link
-            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-slate-950"
-            to="/calendar"
-          >
-            달력에서 일정 보기
-          </Link>
-        </section>
+      {hasCurrentOrNextSchedule ? (
+        <div className="mt-8 space-y-5">
+          {currentSchedule && (
+            <HomeScheduleCard
+              eyebrow={
+                currentSchedule.startDate === today
+                  ? '오늘 휴가 시작'
+                  : '현재 휴가 중'
+              }
+              schedule={currentSchedule}
+            />
+          )}
+          {nextSchedule && (
+            <HomeScheduleCard
+              eyebrow={`다음 휴가까지 D-${dday}`}
+              schedule={nextSchedule}
+            />
+          )}
+        </div>
       ) : (
         <>
           <EmptyState
@@ -61,5 +63,34 @@ export function HomePage() {
         </>
       )}
     </>
+  )
+}
+
+type HomeScheduleCardProps = {
+  eyebrow: string
+  schedule: ContinuousLeaveSchedule
+}
+
+function HomeScheduleCard({ eyebrow, schedule }: HomeScheduleCardProps) {
+  return (
+    <section className="rounded-3xl bg-slate-950 p-6 text-white shadow-sm">
+      <p className="text-sm font-semibold text-blue-200">{eyebrow}</p>
+      <h2 className="mt-3 text-2xl font-bold tracking-tight">
+        {formatCalendarDate(schedule.startDate)} ~{' '}
+        {formatCalendarDate(schedule.endDate)}
+      </h2>
+      <p className="mt-2 text-sm text-slate-300">총 {schedule.totalDays}일</p>
+      <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold leading-6">
+        {schedule.composition
+          .map(({ days, type }) => `${getLeaveTypeLabel(type)} ${days}일`)
+          .join(' + ')}
+      </p>
+      <Link
+        className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-slate-950"
+        to="/calendar"
+      >
+        달력에서 일정 보기
+      </Link>
+    </section>
   )
 }
