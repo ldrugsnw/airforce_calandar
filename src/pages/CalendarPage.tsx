@@ -249,7 +249,7 @@ export function CalendarPage() {
   return (
     <>
       <PageHeader
-        description="휴가 일정을 종류별 색상으로 확인하고 계획하세요."
+        description={'빈 날짜를 두 번 눌러 기간을 선택하세요.\n등록한 일정은 휴가 종류별 색상으로 표시됩니다.'}
         title="달력"
       />
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -427,10 +427,7 @@ export function CalendarPage() {
                 </ul>
               </section>
             )}
-            <p className="mt-5 text-xs font-semibold text-brand-600">
-              선택한 개별 기록
-            </p>
-            <div className="flex items-start justify-between gap-3">
+            <div className="mt-5 flex items-start justify-between gap-3">
               <div>
                 <span
                   className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${LEAVE_TYPE_STYLES[selectedUsageGrant.type]}`}

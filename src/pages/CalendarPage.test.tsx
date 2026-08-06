@@ -13,6 +13,12 @@ describe('월간 달력', () => {
       </MemoryRouter>,
     )
 
+    const calendarDescription = screen.getByText(/빈 날짜를 두 번 눌러/)
+    expect(calendarDescription).toHaveClass('whitespace-pre-line')
+    expect(calendarDescription).toHaveTextContent(
+      '빈 날짜를 두 번 눌러 기간을 선택하세요. 등록한 일정은 휴가 종류별 색상으로 표시됩니다.',
+    )
+
     const currentMonth = screen.getByRole('heading', { level: 2 }).textContent
     fireEvent.click(screen.getByRole('button', { name: '다음 달' }))
     expect(screen.getByRole('heading', { level: 2 })).not.toHaveTextContent(currentMonth ?? '')
@@ -185,7 +191,7 @@ describe('월간 달력', () => {
     expect(screen.getByText('연결된 전체 일정')).toBeInTheDocument()
     expect(screen.getByText('총 5일 · 연가 3일 + 위로휴가 2일')).toBeInTheDocument()
     expect(screen.getByText(/\(선택한 기록\)/)).toBeInTheDocument()
-    expect(screen.getByText('선택한 개별 기록')).toBeInTheDocument()
+    expect(screen.queryByText('선택한 개별 기록')).not.toBeInTheDocument()
 
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: '일정 취소' }))

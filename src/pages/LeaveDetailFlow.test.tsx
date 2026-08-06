@@ -146,7 +146,7 @@ describe('보유 휴가 상세·수정·삭제 흐름', () => {
       }),
     )
     expect(screen.getByRole('heading', { name: '2026년 8월' })).toBeInTheDocument()
-    expect(screen.getByText('선택한 개별 기록')).toBeInTheDocument()
+    expect(screen.queryByText('선택한 개별 기록')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('link', { name: '내 휴가' }))
     fireEvent.click(

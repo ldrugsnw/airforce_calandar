@@ -10,7 +10,9 @@ export function PageHeader({ description, title }: PageHeaderProps) {
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
         {title}
       </h1>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-500">
+        {description}
+      </p>
     </header>
   )
 }
