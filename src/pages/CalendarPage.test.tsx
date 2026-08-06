@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { App } from '../app/App'
 import type { LeaveGrant } from '../domain/leave'
+import type { LeaveUsage } from '../domain/leaveUsage'
 import { APP_STORAGE_KEY, saveAppState } from '../store/appStorage'
 
 describe('월간 달력', () => {
@@ -144,5 +145,36 @@ describe('월간 달력', () => {
         canceled: true,
       })
     })
+  })
+
+  it('종류별 색상을 유지하면서 인접한 기록의 경계를 연결한다', () => {
+    const leaveGrants: LeaveGrant[] = [
+      {
+        id: 'annual', type: 'annual', days: 3, acquiredDate: '2026-08-01', reason: '정기 연가', memo: '',
+        createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+      },
+      {
+        id: 'consolation', type: 'consolation', days: 2, acquiredDate: '2026-08-01', reason: '근무 위로', memo: '',
+        createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+      },
+    ]
+    const baseUsage: LeaveUsage = {
+      id: 'annual-usage', leaveGrantId: 'annual', startDate: '2026-08-08', endDate: '2026-08-10',
+      canceled: false, canceledAt: null, createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+    }
+    saveAppState({
+      leaveGrants,
+      leaveUsages: [
+        baseUsage,
+        { ...baseUsage, id: 'consolation-usage', leaveGrantId: 'consolation', startDate: '2026-08-11', endDate: '2026-08-12' },
+      ],
+    })
+
+    render(<MemoryRouter initialEntries={['/calendar']}><App /></MemoryRouter>)
+
+    const annualEnd = screen.getByRole('button', { name: /2026년 8월 10일, 연가/ })
+    const consolationStart = screen.getByRole('button', { name: /2026년 8월 11일, 위로휴가/ })
+    expect(annualEnd).toHaveClass('bg-blue-600', 'rounded-r-none')
+    expect(consolationStart).toHaveClass('bg-amber-300', 'rounded-l-none')
   })
 })

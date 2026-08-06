@@ -56,6 +56,26 @@ function toDayNumber(date: CalendarDate) {
   return Date.UTC(year, month - 1, day) / MILLISECONDS_PER_DAY
 }
 
+export function addCalendarDays(date: CalendarDate, days: number) {
+  if (!Number.isInteger(days)) {
+    throw new Error('이동할 날짜 수는 정수여야 합니다.')
+  }
+
+  const moved = new Date((toDayNumber(date) + days) * MILLISECONDS_PER_DAY)
+  return createCalendarDate(
+    moved.getUTCFullYear(),
+    moved.getUTCMonth() + 1,
+    moved.getUTCDate(),
+  )
+}
+
+export function getCalendarDayDifference(
+  startDate: CalendarDate,
+  endDate: CalendarDate,
+) {
+  return toDayNumber(endDate) - toDayNumber(startDate)
+}
+
 export function getKstToday(now = new Date()): CalendarDate {
   const parts = new Intl.DateTimeFormat('en-US', {
     day: '2-digit',

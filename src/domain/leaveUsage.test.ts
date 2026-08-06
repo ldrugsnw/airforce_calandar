@@ -1,7 +1,10 @@
 import type { LeaveGrant } from './leave'
 import {
+  createContinuousLeaveSchedules,
   getAvailableDays,
   getLeaveGrantSummary,
+  getCurrentOrNextLeaveSchedule,
+  getLeaveScheduleDday,
   getLeaveUsageStatus,
   getLeaveUsageStatusLabel,
   validateLeaveUsage,
@@ -122,5 +125,50 @@ describe('휴가 사용 기록 계산과 검증', () => {
         leaveUsage.id,
       ),
     ).toEqual({ valid: true })
+  })
+
+  it('날짜가 바로 이어지는 기록만 연속 일정으로 묶고 종류별 구성을 계산한다', () => {
+    const consolationGrant: LeaveGrant = {
+      ...leaveGrant,
+      id: 'leave-grant-2',
+      type: 'consolation',
+      days: 3,
+    }
+    const schedules = createContinuousLeaveSchedules(
+      [
+        { ...leaveUsage, id: 'second', leaveGrantId: consolationGrant.id, startDate: '2026-08-11', endDate: '2026-08-12' },
+        leaveUsage,
+        { ...leaveUsage, id: 'separate', startDate: '2026-08-14', endDate: '2026-08-14' },
+        { ...leaveUsage, id: 'canceled', startDate: '2026-08-13', endDate: '2026-08-13', canceled: true },
+      ],
+      [leaveGrant, consolationGrant],
+    )
+
+    expect(schedules).toHaveLength(2)
+    expect(schedules[0]).toMatchObject({
+      startDate: '2026-08-08',
+      endDate: '2026-08-12',
+      totalDays: 5,
+      composition: [
+        { type: 'annual', days: 3 },
+        { type: 'consolation', days: 2 },
+      ],
+    })
+    expect(schedules[1]).toMatchObject({ startDate: '2026-08-14', totalDays: 1 })
+  })
+
+  it('KST 오늘을 포함한 일정을 우선하고 없으면 가장 가까운 미래 일정의 D-day를 계산한다', () => {
+    const schedules = createContinuousLeaveSchedules(
+      [
+        leaveUsage,
+        { ...leaveUsage, id: 'next', startDate: '2026-08-15', endDate: '2026-08-15' },
+      ],
+      [leaveGrant],
+    )
+
+    expect(getCurrentOrNextLeaveSchedule(schedules, '2026-08-09')?.startDate).toBe('2026-08-08')
+    const next = getCurrentOrNextLeaveSchedule(schedules, '2026-08-11')
+    expect(next?.startDate).toBe('2026-08-15')
+    expect(next && getLeaveScheduleDday(next, '2026-08-11')).toBe(4)
   })
 })

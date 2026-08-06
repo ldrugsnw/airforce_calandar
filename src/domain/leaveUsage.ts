@@ -1,8 +1,10 @@
 import {
+  addCalendarDays,
+  getCalendarDayDifference,
   getInclusiveDayCount,
   type CalendarDate,
 } from './calendarDate'
-import type { LeaveGrant } from './leave'
+import type { LeaveGrant, LeaveType } from './leave'
 
 export type LeaveUsage = {
   id: string
@@ -24,12 +26,99 @@ export type LeaveGrantSummary = {
   availableDays: number
 }
 
+export type ContinuousLeaveComposition = {
+  type: LeaveType
+  days: number
+}
+
+export type ContinuousLeaveSchedule = {
+  startDate: CalendarDate
+  endDate: CalendarDate
+  totalDays: number
+  usages: LeaveUsage[]
+  composition: ContinuousLeaveComposition[]
+}
+
 export type LeaveUsageValidation =
   | { valid: true }
   | { valid: false; reason: 'leaveGrantNotFound' | 'insufficientDays' | 'overlap'; message: string }
 
 export function getLeaveUsageDays(leaveUsage: LeaveUsage) {
   return getInclusiveDayCount(leaveUsage.startDate, leaveUsage.endDate)
+}
+
+export function createContinuousLeaveSchedules(
+  leaveUsages: LeaveUsage[],
+  leaveGrants: LeaveGrant[],
+): ContinuousLeaveSchedule[] {
+  const grantById = new Map(leaveGrants.map((grant) => [grant.id, grant]))
+  const sortedUsages = leaveUsages
+    .filter((usage) => !usage.canceled && grantById.has(usage.leaveGrantId))
+    .sort((first, second) =>
+      first.startDate.localeCompare(second.startDate),
+    )
+  const usageGroups: LeaveUsage[][] = []
+
+  for (const usage of sortedUsages) {
+    const currentGroup = usageGroups.at(-1)
+    const previousUsage = currentGroup?.at(-1)
+
+    if (
+      currentGroup &&
+      previousUsage &&
+      usage.startDate === addCalendarDays(previousUsage.endDate, 1)
+    ) {
+      currentGroup.push(usage)
+    } else {
+      usageGroups.push([usage])
+    }
+  }
+
+  return usageGroups.map((usages) => {
+    const composition = usages.reduce<ContinuousLeaveComposition[]>(
+      (items, usage) => {
+        const type = grantById.get(usage.leaveGrantId)?.type
+        if (!type) return items
+
+        const existing = items.find((item) => item.type === type)
+        if (existing) {
+          existing.days += getLeaveUsageDays(usage)
+        } else {
+          items.push({ type, days: getLeaveUsageDays(usage) })
+        }
+        return items
+      },
+      [],
+    )
+    const startDate = usages[0].startDate
+    const endDate = usages.at(-1)?.endDate ?? startDate
+
+    return {
+      startDate,
+      endDate,
+      totalDays: getInclusiveDayCount(startDate, endDate),
+      usages,
+      composition,
+    }
+  })
+}
+
+export function getCurrentOrNextLeaveSchedule(
+  schedules: ContinuousLeaveSchedule[],
+  today: CalendarDate,
+) {
+  const currentSchedule = schedules.find(
+    (schedule) => schedule.startDate <= today && today <= schedule.endDate,
+  )
+
+  return currentSchedule ?? schedules.find((schedule) => schedule.startDate > today)
+}
+
+export function getLeaveScheduleDday(
+  schedule: ContinuousLeaveSchedule,
+  today: CalendarDate,
+) {
+  return getCalendarDayDifference(today, schedule.startDate)
 }
 
 export function getLeaveUsageStatus(

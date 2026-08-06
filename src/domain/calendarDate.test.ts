@@ -1,4 +1,5 @@
 import {
+  addCalendarDays,
   createMonthGrid,
   getInclusiveDayCount,
   getKstToday,
@@ -7,6 +8,11 @@ import {
 } from './calendarDate'
 
 describe('달력 날짜 계산', () => {
+  it('월말과 연말을 넘어 다음 날짜를 계산한다', () => {
+    expect(addCalendarDays('2026-08-31', 1)).toBe('2026-09-01')
+    expect(addCalendarDays('2026-12-31', 1)).toBe('2027-01-01')
+    expect(addCalendarDays('2026-03-01', -1)).toBe('2026-02-28')
+  })
   it('실행 환경과 관계없이 KST의 오늘 날짜를 구한다', () => {
     expect(getKstToday(new Date('2026-08-03T14:59:59Z'))).toBe('2026-08-03')
     expect(getKstToday(new Date('2026-08-03T15:00:00Z'))).toBe('2026-08-04')
